@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Mail, Lock, User, Shield, AlertCircle } from 'lucide-react';
 
 const Auth = ({ mode = 'login' }) => {
@@ -12,6 +12,8 @@ const Auth = ({ mode = 'login' }) => {
   
   const { login, signup } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from?.pathname || '/dashboard';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,7 +26,7 @@ const Auth = ({ mode = 'login' }) => {
       } else {
         await signup(email, password);
       }
-      navigate('/dashboard');
+      navigate(from, { replace: true });
     } catch (err) {
       setError(err.message || 'Authentication failed');
     } finally {

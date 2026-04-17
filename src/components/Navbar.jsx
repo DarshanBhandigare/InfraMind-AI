@@ -43,14 +43,14 @@ const Navbar = () => {
         <Link to="/dashboard" style={navLinkStyle}>Dashboard</Link>
         <Link to="/alerts" style={navLinkStyle}>Alerts</Link>
         <Link to="/about" style={navLinkStyle}>Resources</Link>
-        <Link to="/about" style={navLinkStyle}>Contact</Link>
+        <Link to="/contact" style={navLinkStyle}>Contact</Link>
       </div>
 
       <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
         {user ? (
           <>
             <button onClick={handleLogout} className="btn-outline" style={{ fontSize: '14px' }}>
-              Admin Login
+              Logout
             </button>
             <Link to="/report" className="btn-primary" style={{ fontSize: '14px' }}>
               Report Issue
@@ -58,10 +58,10 @@ const Navbar = () => {
           </>
         ) : (
           <>
-            <Link to="/login" className="btn-outline" style={{ fontSize: '14px' }}>
+            <Link to="/admin/login" className="btn-outline" style={{ fontSize: '14px' }}>
               Admin Login
             </Link>
-            <Link to="/signup" className="btn-primary" style={{ fontSize: '14px' }}>
+            <Link to="/login" className="btn-primary" style={{ fontSize: '14px' }}>
               Report Issue
             </Link>
           </>
