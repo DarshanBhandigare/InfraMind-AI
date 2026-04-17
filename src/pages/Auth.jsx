@@ -1,0 +1,145 @@
+import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate, Link } from 'react-router-dom';
+import { Mail, Lock, User, Shield, AlertCircle } from 'lucide-react';
+
+const Auth = ({ mode = 'login' }) => {
+  const [isLogin, setIsLogin] = useState(mode === 'login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  
+  const { login, signup } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      if (isLogin) {
+        await login(email, password);
+      } else {
+        await signup(email, password);
+      }
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.message || 'Authentication failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '2rem',
+      background: 'var(--gradient)'
+    }}>
+      <div className="glass-card" style={{ width: '100%', maxWidth: '450px', padding: '3rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+          <div style={{ 
+            display: 'inline-flex', 
+            padding: '1rem', 
+            borderRadius: '20px', 
+            background: 'rgba(59, 130, 246, 0.1)',
+            marginBottom: '1rem'
+          }}>
+            <Shield size={40} color="var(--primary)" />
+          </div>
+          <h2 style={{ fontSize: '2rem' }}>{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
+          <p style={{ color: 'var(--text-muted)' }}>
+            {isLogin ? 'Log in to manage infrastructure' : 'Join InfraMind AI today'}
+          </p>
+        </div>
+
+        {error && (
+          <div style={{ 
+            background: 'rgba(239, 68, 68, 0.1)', 
+            border: '1px solid rgba(239, 68, 68, 0.2)',
+            padding: '0.8rem',
+            borderRadius: 'var(--radius-sm)',
+            color: '#fca5a5',
+            fontSize: '0.9rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            marginBottom: '1.5rem'
+          }}>
+            <AlertCircle size={16} /> {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+          <div className="input-group">
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 500 }}>Email Address</label>
+            <div style={{ position: 'relative' }}>
+              <Mail size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+              <input 
+                type="email" 
+                required 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                style={inputStyle} 
+                placeholder="name@example.com"
+              />
+            </div>
+          </div>
+
+          <div className="input-group">
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 500 }}>Password</label>
+            <div style={{ position: 'relative' }}>
+              <Lock size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+              <input 
+                type="password" 
+                required 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={inputStyle} 
+                placeholder="••••••••"
+              />
+            </div>
+          </div>
+
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="btn-primary" 
+            style={{ width: '100%', justifyContent: 'center', padding: '1rem', marginTop: '1rem' }}
+          >
+            {loading ? 'Processing...' : isLogin ? 'Sign In' : 'Create Account'}
+          </button>
+        </form>
+
+        <p style={{ textAlign: 'center', marginTop: '2rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+          {isLogin ? "Don't have an account? " : "Already have an account? "}
+          <span 
+            onClick={() => setIsLogin(!isLogin)} 
+            style={{ color: 'var(--primary)', cursor: 'pointer', fontWeight: 600 }}
+          >
+            {isLogin ? 'Sign Up' : 'Log In'}
+          </span>
+        </p>
+      </div>
+    </div>
+  );
+};
+
+const inputStyle = {
+  width: '100%',
+  padding: '0.8rem 1rem 0.8rem 3rem',
+  background: 'rgba(15, 23, 42, 0.5)',
+  border: '1px solid var(--glass-border)',
+  borderRadius: 'var(--radius-md)',
+  color: 'white',
+  outline: 'none',
+  fontSize: '1rem',
+  transition: 'border-color 0.3s ease'
+};
+
+export default Auth;
