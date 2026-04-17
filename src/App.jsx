@@ -30,7 +30,7 @@ function App() {
             <Route path="/login" element={<Auth mode="login" />} />
             <Route path="/signup" element={<Auth mode="signup" />} />
             <Route path="/about" element={<About />} />
-            
+
             {/* Protected Routes */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/report" element={<ProtectedRoute><CitizenReport /></ProtectedRoute>} />
