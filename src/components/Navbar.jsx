@@ -30,7 +30,7 @@ const Navbar = () => {
       width: '100%',
       zIndex: 1000
     }}>
-      <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
         <Shield size={28} color="var(--primary)" fill="var(--primary)" fillOpacity={0.1} />
         <span style={{ fontSize: '20px', fontWeight: 800, color: 'var(--primary)', letterSpacing: '-0.5px' }}>
           InfraMind AI
@@ -61,7 +61,7 @@ const Navbar = () => {
             <Link to="/admin/login" className="btn-outline" style={{ fontSize: '14px' }}>
               Admin Login
             </Link>
-            <Link to="/login" className="btn-primary" style={{ fontSize: '14px' }}>
+            <Link to="/report" className="btn-primary" style={{ fontSize: '14px' }}>
               Report Issue
             </Link>
           </>
@@ -75,6 +75,7 @@ const navLinkStyle = {
   fontSize: '14px',
   fontWeight: 500,
   color: 'var(--text-muted)',
+  textDecoration: 'none',
 };
 
 export default Navbar;
