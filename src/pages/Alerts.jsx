@@ -308,10 +308,10 @@ const AlertsPanel = ({ filter, setFilter, filteredAlerts, overviewStats }) => (
     </div>
 
     <section style={{ marginTop: '28px', marginBottom: '34px' }}>
-      <h1 style={{ fontSize: '78px', lineHeight: 0.98, letterSpacing: '-3px', marginBottom: '18px' }}>
+      <h1 style={{ fontSize: '48px', lineHeight: 1, letterSpacing: '-1px', marginBottom: '16px' }}>
         InfraMind AI <span style={{ color: 'var(--primary)' }}>Alerts</span>
       </h1>
-      <p style={{ maxWidth: '820px', fontSize: '20px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+      <p style={{ maxWidth: '820px', fontSize: '16px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
         Real-time intelligence feed monitoring the pulse of Mumbai infrastructure. Predictive analysis and critical response coordination for BMC teams.
       </p>
     </section>
