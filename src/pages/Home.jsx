@@ -14,8 +14,8 @@ const Home = () => {
   useEffect(() => {
     // Subscribe to live stats
     const unsubscribeStats = subscribeToStats((data) => {
-      const resolvedPct = data.totalReports > 0 
-        ? Math.round((data.resolvedCount / data.totalReports) * 100) 
+      const resolvedPct = data.totalReports > 0
+        ? Math.round((data.resolvedCount / data.totalReports) * 100)
         : 0;
       setStats({
         total: data.totalReports,
@@ -54,13 +54,13 @@ const Home = () => {
                 <span>POWERED BY DISTRIBUTED INTELLIGENCE</span>
               </div>
               <h1 style={heroTitleStyle}>
-                Urban Infrastructure <br />
+                Predict <br /> Failure. <br />
                 <span style={{ color: 'var(--primary)', textShadow: '0 0 30px rgba(37, 99, 235, 0.2)' }}>
-                  Perfected by AI.
+                  Before It Happens.
                 </span>
               </h1>
               <p style={heroSubtitleStyle}>
-                The world's first predictive maintenance grid for metropolitan assets. 
+                The world's first predictive maintenance grid for metropolitan assets.
                 Identify vulnerabilities, automate escalations, and protect the community in real-time.
               </p>
               <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
@@ -90,10 +90,10 @@ const Home = () => {
                   style={heroImageStyle}
                 />
                 {/* Floating Glass Data Card */}
-                <motion.div 
+                <motion.div
                   animate={{ y: [0, -15, 0] }}
                   transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                  className="glass" 
+                  className="glass"
                   style={floatingCardStyle}
                 >
                   <Activity size={24} color="var(--primary)" />
@@ -160,7 +160,7 @@ const Home = () => {
             <div>
               <h3 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--primary)', marginBottom: '20px' }}>InfraMind AI</h3>
               <p style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: 1.6 }}>
-                The definitive standard for metropolitan infrastructure management. 
+                The definitive standard for metropolitan infrastructure management.
                 Built for cities that never sleep.
               </p>
             </div>
@@ -181,9 +181,9 @@ const Home = () => {
 
 // Sub-components
 const StatCard = ({ label, value, icon, color }) => (
-  <motion.div 
+  <motion.div
     whileHover={{ y: -5 }}
-    className="card" 
+    className="card"
     style={{ display: 'flex', alignItems: 'center', gap: '24px', padding: '40px', border: 'none', background: 'white', boxShadow: '0 20px 40px rgba(0,0,0,0.03)' }}
   >
     <div style={{ padding: '16px', borderRadius: '16px', background: color }}>{icon}</div>

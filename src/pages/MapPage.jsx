@@ -21,10 +21,10 @@ L.Marker.prototype.options.icon = defaultIcon;
 
 const MUMBAI_CENTER = [19.076, 72.8777];
 const MUMBAI_BOUNDS = {
-  minLat: 18.89,
-  maxLat: 19.31,
-  minLng: 72.77,
-  maxLng: 72.99
+  minLat: 18.0,
+  maxLat: 20.0,
+  minLng: 72.0,
+  maxLng: 74.0
 };
 
 // Demo reports removed in favor of live Firebase data
@@ -49,7 +49,7 @@ const normalizeReport = (report) => ({
   status: report.status || 'Action Required',
   impactLabel: report.score ? `${(report.score / 10).toFixed(1)}/10` : '6.0/10',
   assets: report.assets || ['BMC Road Segment', 'Ward Operations Queue'],
-  image: report.image || 'https://images.unsplash.com/photo-1515162305285-0293e4767cc2?q=80&w=900&auto=format&fit=crop'
+  image: report.imageUrl || report.image || null
 });
 
 const getIssueIcon = (issueType) => {
@@ -74,9 +74,6 @@ const MapFocus = ({ issue }) => {
   return null;
 };
 
-import MarkerClusterGroup from 'react-leaflet-cluster';
-import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
-
 const MapPage = () => {
   const [reports, setReports] = useState([]);
   const [selectedIssueId, setSelectedIssueId] = useState(null);
@@ -84,13 +81,21 @@ const MapPage = () => {
   const [issueFilters, setIssueFilters] = useState({
     Potholes: true,
     Drainage: true,
-    Lighting: true
+    Lighting: true,
+    'Water Leakage': true,
+    'Traffic System': true
   });
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'reports'), (snapshot) => {
       const data = snapshot.docs.map((doc) => processReport({ id: doc.id, ...doc.data() }));
-      setReports(data.filter((report) => report.location));
+      setReports(
+        data.filter(
+          (report) =>
+            report.location &&
+            (report.status?.toLowerCase() === 'approved' || report.originalStatus?.toLowerCase() === 'approved')
+        )
+      );
     });
 
     return unsubscribe;
@@ -112,7 +117,10 @@ const MapPage = () => {
 
     return baseReports.filter((report) => {
       const normalizedType = (report.type || '').toLowerCase();
-      return activeKeys.some((key) => normalizedType.includes(key.slice(0, -1)) || normalizedType.includes(key));
+      return activeKeys.some((key) => {
+        const cleanKey = key.toLowerCase();
+        return normalizedType.includes(cleanKey) || (normalizedType.includes('light') && cleanKey.includes('light'));
+      });
     });
   }, [baseReports, issueFilters]);
 
@@ -139,16 +147,7 @@ const MapPage = () => {
     <div style={{ height: 'calc(100vh - 72px)', marginTop: '72px', display: 'flex', background: '#f6f0e8' }}>
       <aside style={{ width: '320px', padding: '32px', borderRight: '1px solid var(--border)', background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(12px)', display: 'flex', flexDirection: 'column', gap: '32px', zIndex: 1001 }}>
         <div>
-          <h4 style={sidebarHeadingStyle}>Risk Priority</h4>
-          <div style={{ display: 'grid', gap: '8px', marginTop: '16px' }}>
-            <SeverityPill label="Critical / Degrading" color="#fee2e2" textColor="#b91c1c" icon="!" />
-            <SeverityPill label="Watch Status" color="#fef3c7" textColor="#92400e" icon="^" />
-            <SeverityPill label="Stable Asset" color="#dcfce7" textColor="#15803d" icon="+" />
-          </div>
-        </div>
-
-        <div>
-          <h4 style={sidebarHeadingStyle}>Intelligence Filters</h4>
+          <h4 style={sidebarHeadingStyle}>Issue Type</h4>
           <div style={{ display: 'grid', gap: '12px', marginTop: '16px' }}>
             <FilterCheckbox
               label="Potholes"
@@ -165,14 +164,38 @@ const MapPage = () => {
               checked={issueFilters.Lighting}
               onChange={() => toggleIssueFilter('Lighting', setIssueFilters)}
             />
+            <FilterCheckbox
+              label="Water Leakage"
+              checked={issueFilters['Water Leakage']}
+              onChange={() => toggleIssueFilter('Water Leakage', setIssueFilters)}
+            />
+            <FilterCheckbox
+              label="Traffic System"
+              checked={issueFilters['Traffic System']}
+              onChange={() => toggleIssueFilter('Traffic System', setIssueFilters)}
+            />
+          </div>
+        </div>
+
+        <div>
+          <h4 style={sidebarHeadingStyle}>Severity</h4>
+          <div style={{ display: 'grid', gap: '8px', marginTop: '16px' }}>
+            <SeverityPill label="High / Critical" color="#fee2e2" textColor="#b91c1c" icon="!" />
+            <SeverityPill label="Medium Risk" color="#fef3c7" textColor="#92400e" icon="^" />
+            <SeverityPill label="Low Priority" color="#dcfce7" textColor="#15803d" icon="+" />
           </div>
         </div>
 
         <div className="card" style={{ padding: '18px 20px', display: 'grid', gap: '12px' }}>
-          <div style={{ ...sidebarHeadingStyle, color: 'var(--primary)' }}>Predictive Node Feed</div>
-          <div style={{ fontSize: '13px', lineHeight: 1.6, color: 'var(--text-muted)' }}>
-            Real-time infrastructure intelligence aggregated from citizen reports and environmental context.
+          <div style={{ ...sidebarHeadingStyle, color: 'var(--primary)' }}>BMC Mumbai Demo Layer</div>
+          <div style={{ fontSize: '14px', lineHeight: 1.6, color: 'var(--text-muted)' }}>
+            The map shows approved reports around Mumbai using the actual evidence submitted by citizens.
           </div>
+          {!displayReports.length && (
+            <div style={{ fontSize: '12px', color: '#b45309', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '12px', padding: '10px 12px' }}>
+              No approved issues match the selected filters right now.
+            </div>
+          )}
           <div style={{ display: 'grid', gap: '10px' }}>
             {displayReports.slice(0, 3).map((report) => (
               <button
@@ -192,7 +215,7 @@ const MapPage = () => {
                 <IssueIcon issueType={report.type} color={report.color} />
                 <div>
                   <div style={{ fontSize: '13px', fontWeight: 700 }}>{report.type}</div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{report.category || 'Stable'}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{report.displayAddress}</div>
                 </div>
               </button>
             ))}
@@ -200,8 +223,8 @@ const MapPage = () => {
         </div>
 
         <div style={{ marginTop: 'auto' }}>
-          <div className="pill pill-blue" style={{ width: '100%', padding: '12px', justifyContent: 'center', fontSize: '12px', fontWeight: 800 }}>
-            PREDICTIVE_SYNC_NOMINAL
+          <div className="pill pill-blue" style={{ width: '100%', padding: '12px', justifyContent: 'center', fontSize: '13px' }}>
+            <Activity size={14} /> System Health: 98.4%
           </div>
         </div>
       </aside>
@@ -214,27 +237,25 @@ const MapPage = () => {
             attribution="&copy; CARTO"
           />
 
-          <MarkerClusterGroup chunkedLoading>
-            {displayReports.map((report) => (
-              <React.Fragment key={report.id}>
-                <Circle
-                  center={[report.location.lat, report.location.lng]}
-                  radius={report.score > 80 ? 450 : 300}
-                  pathOptions={{
-                    fillColor: report.color,
-                    color: report.color,
-                    fillOpacity: report.score > 80 ? 0.4 : 0.2,
-                    weight: report.score > 80 ? 2 : 1,
-                    dashArray: report.score > 80 ? [5, 5] : null
-                  }}
-                />
-                <Marker
-                  position={[report.location.lat, report.location.lng]}
-                  eventHandlers={{ click: () => setSelectedIssueId(report.id) }}
-                />
-              </React.Fragment>
-            ))}
-          </MarkerClusterGroup>
+          {displayReports.map((report) => (
+            <React.Fragment key={report.id}>
+              <Circle
+                center={[report.location.lat, report.location.lng]}
+                radius={report.isDelayed ? 450 : 300}
+                pathOptions={{
+                  fillColor: report.color,
+                  color: report.color,
+                  fillOpacity: report.isDelayed ? 0.4 : 0.2,
+                  weight: report.isDelayed ? 2 : 1,
+                  dashArray: report.isDelayed ? [5, 5] : null
+                }}
+              />
+              <Marker
+                position={[report.location.lat, report.location.lng]}
+                eventHandlers={{ click: () => setSelectedIssueId(report.id) }}
+              />
+            </React.Fragment>
+          ))}
         </MapContainer>
 
         {selectedIssue && (
@@ -272,7 +293,17 @@ const MapPage = () => {
             </div>
 
             <div style={{ position: 'relative', height: '220px', padding: '0 24px' }}>
-              <img src={selectedIssue.image} alt={selectedIssue.type} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '24px' }} />
+              {selectedIssue.image ? (
+                <img src={selectedIssue.image} alt={selectedIssue.type} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '24px' }} />
+              ) : (
+                <div style={emptyImageStyle}>
+                  <AlertTriangle size={28} color="#94a3b8" />
+                  <div style={{ fontSize: '15px', fontWeight: 700, color: '#475569' }}>No uploaded image available</div>
+                  <div style={{ fontSize: '13px', color: '#64748b', textAlign: 'center', maxWidth: '240px' }}>
+                    This approved report did not include a usable evidence image.
+                  </div>
+                </div>
+              )}
             </div>
 
             <div style={{ padding: '24px' }}>
@@ -406,6 +437,20 @@ const assetRowStyle = {
   borderRadius: '14px',
   border: '1px solid var(--border)',
   background: 'white'
+};
+
+const emptyImageStyle = {
+  width: '100%',
+  height: '100%',
+  borderRadius: '24px',
+  background: 'linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%)',
+  border: '1px solid #e2e8f0',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '10px',
+  padding: '24px'
 };
 
 export default MapPage;

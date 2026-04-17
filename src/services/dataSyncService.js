@@ -27,6 +27,14 @@ const WORK_STEPS = [
 
 const CATEGORIES = ['Pothole', 'Drainage', 'Lighting', 'Structural', 'Maintenance'];
 
+export const formatLocationAddress = (location) => {
+  if (!location || typeof location.lat !== 'number' || typeof location.lng !== 'number') {
+    return 'Location unavailable';
+  }
+
+  return `Pinned location (${location.lat.toFixed(5)}, ${location.lng.toFixed(5)})`;
+};
+
 export const generateAIData = (id, category = 'Maintenance') => {
   const seed = seedRandom(id);
   
@@ -64,10 +72,16 @@ export const processReport = (report) => {
   const aiData = report.aiData || generateAIData(id, category);
 
   // Status mapping
-  let status = report.status || 'Action Required';
-  if (isDelayed && status !== 'Resolved' && status !== 'In Progress') {
+  const originalStatus = report.status || 'Action Required';
+  let status = originalStatus;
+  const canAutoMarkDelayed = ['Action Required', 'reported', 'pending', 'Pending', 'Delayed'].includes(originalStatus);
+
+  if (isDelayed && canAutoMarkDelayed) {
     status = 'Delayed';
   }
+
+  const normalizedAddress = typeof report.address === 'string' ? report.address.trim() : '';
+  const displayAddress = normalizedAddress || formatLocationAddress(report.location);
 
   return {
     ...report,
@@ -77,7 +91,10 @@ export const processReport = (report) => {
     daysDelayed: diffDays,
     isDelayed,
     aiData,
+    originalStatus,
     status,
+    address: normalizedAddress,
+    displayAddress,
     score: report.score || Math.floor(seedRandom(id) * 60) + 40,
     acceptedBy: report.acceptedBy || null,
     progress: report.progress || (report.acceptedBy ? 15 : 0),

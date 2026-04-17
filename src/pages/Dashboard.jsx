@@ -175,8 +175,8 @@ const Dashboard = () => {
                     <Popup>
                       <div style={{ padding: '4px' }}>
                         <strong style={{ display: 'block', marginBottom: '4px' }}>{report.type}</strong>
-                        <span style={{ fontSize: '12px', color: '#64748b' }}>{report.address}</span>
-                        <div style={{ marginTop: '8px', fontWeight: 700, color: report.color }}>
+                        <span style={{ fontSize: '12px', color: '#64748b' }}>{report.displayAddress}</span>
+                        <div style={{ marginTop: '8px', fontWeight: 700, color: report.color, fontSize: '12px' }}>
                           Risk Score: {report.score}
                         </div>
                       </div>
@@ -250,7 +250,7 @@ const Dashboard = () => {
                   <div key={report.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'var(--surface)', borderRadius: '8px' }}>
                     <div>
                       <div style={{ fontSize: '14px', fontWeight: 700 }}>{report.type}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{report.address || 'Incoming...'}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{report.displayAddress}</div>
                     </div>
                     <div style={{ color: report.color, fontWeight: 800 }}>{report.score}</div>
                   </div>

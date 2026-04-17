@@ -100,11 +100,11 @@ const About = () => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '18px', marginBottom: '22px' }}>
           {resourceGroups.map((group) => (
             <article key={group.title} style={resourceCardStyle}>
-              <div style={{ ...resourceHeaderStyle, background: group.accent }}>
-                <div style={resourceIconWrapStyle}>{group.icon}</div>
-                <h3 style={{ color: 'white', fontSize: '22px', lineHeight: 1.1 }}>{group.title}</h3>
+              <div style={resourceHeaderStyle}>
+                <div style={{ ...resourceIconWrapStyle, color: group.accent.split(',')[1].trim().replace(')', '') }}>{group.icon}</div>
+                <h3 style={{ color: '#1e293b', fontSize: '20px', fontWeight: 800, lineHeight: 1.1 }}>{group.title}</h3>
               </div>
-              <div style={{ padding: '18px' }}>
+              <div style={{ padding: '0 18px 24px' }}>
                 <div style={{ display: 'grid', gap: '12px' }}>
                   {group.items.map((item) => (
                     <a
@@ -112,13 +112,17 @@ const About = () => {
                       href={item.href}
                       target={item.href.startsWith('http') ? '_blank' : undefined}
                       rel={item.href.startsWith('http') ? 'noreferrer' : undefined}
-                      style={resourceLinkButtonStyle}
+                      style={{
+                        ...resourceLinkButtonStyle,
+                        borderColor: group.accent.split(',')[1].trim().replace(')', '') + '33', // 20% opacity border
+                        color: group.accent.split(',')[1].trim().replace(')', '')
+                      }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
-                        <ExternalLink size={15} />
-                        <span>{item.label}</span>
+                        <ExternalLink size={14} />
+                        <span style={{ fontSize: '14px', fontWeight: 700 }}>{item.label}</span>
                       </div>
-                      <div style={{ fontSize: '10px', fontWeight: 600, opacity: 0.88 }}>{item.meta}</div>
+                      <div style={{ fontSize: '10px', fontWeight: 600, color: '#64748b' }}>{item.meta}</div>
                     </a>
                   ))}
                 </div>
@@ -133,48 +137,46 @@ const About = () => {
 };
 
 const resourceCardStyle = {
-  background: 'rgba(255,255,255,0.82)',
-  borderRadius: '22px',
+  background: '#ffffff',
+  borderRadius: '24px',
   overflow: 'hidden',
-  border: '1px solid rgba(255,255,255,0.82)',
-  boxShadow: '0 20px 34px rgba(88, 118, 164, 0.12)',
-  backdropFilter: 'blur(18px)'
+  border: '1px solid rgba(0, 0, 0, 0.05)',
+  boxShadow: '0 12px 40px rgba(0, 0, 0, 0.08)',
+  transition: 'transform 0.2s ease'
 };
 
 const resourceHeaderStyle = {
-  padding: '18px',
+  padding: '24px 18px 18px',
   display: 'flex',
   alignItems: 'center',
-  gap: '12px'
+  gap: '14px'
 };
 
 const resourceIconWrapStyle = {
-  width: '52px',
-  height: '52px',
-  borderRadius: '16px',
+  width: '48px',
+  height: '48px',
+  borderRadius: '14px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  background: 'rgba(255,255,255,0.2)',
-  color: 'white',
+  background: '#f8fafc',
   flexShrink: 0
 };
 
 const resourceLinkButtonStyle = {
   width: '100%',
   display: 'grid',
-  gap: '4px',
+  gap: '2px',
   alignItems: 'center',
   justifyContent: 'center',
-  background: 'linear-gradient(135deg, #34d399, #16a34a)',
-  color: 'white',
-  borderRadius: '12px',
-  padding: '12px 14px',
-  fontSize: '14px',
-  fontWeight: 700,
-  boxShadow: '0 10px 20px rgba(22, 163, 74, 0.16)',
+  background: '#ffffff',
+  borderRadius: '16px',
+  padding: '14px',
+  border: '1px solid',
+  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
   textDecoration: 'none',
-  textAlign: 'center'
+  textAlign: 'center',
+  transition: 'all 0.2s ease'
 };
 
 const flatActionLinkStyle = {
