@@ -79,6 +79,15 @@ const EscalationHub = () => {
 
   return (
     <div style={pageContainerStyle}>
+      <AnimatePresence>
+        {showReportModal && (
+          <ReportModal 
+            escalations={filteredEscalations}
+            totalCost={totalEscalationCost}
+            onClose={() => setShowReportModal(false)}
+          />
+        )}
+      </AnimatePresence>
       <section style={headerSectionStyle}>
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -545,6 +554,126 @@ const emptyStateStyle = {
   background: 'white',
   borderRadius: '24px',
   border: '2px dashed #e2e8f0'
+};
+
+const ReportModal = ({ escalations, totalCost, onClose }) => {
+  const categories = Array.from(new Set(escalations.map(e => e.category || 'Maintenance')));
+  
+  return (
+    <div style={modalOverlayStyle}>
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        style={modalContentStyle}
+      >
+        <div style={modalHeaderStyle}>
+          <h2 style={{ margin: 0, fontSize: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <FileText size={24} color="var(--primary)" /> 
+            Escalation Hub Report
+          </h2>
+          <button onClick={onClose} style={closeButtonStyle}>&times;</button>
+        </div>
+        <div style={modalBodyStyle}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '30px' }}>
+            <div style={{ padding: '20px', background: '#f8fafc', borderRadius: '16px' }}>
+              <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '8px' }}>Total Delayed Issues</div>
+              <div style={{ fontSize: '32px', fontWeight: 800, color: '#ef4444' }}>{escalations.length}</div>
+            </div>
+            <div style={{ padding: '20px', background: '#f8fafc', borderRadius: '16px' }}>
+              <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '8px' }}>Total Estimated Cost</div>
+              <div style={{ fontSize: '32px', fontWeight: 800, color: '#3b82f6' }}>₹{totalCost.toLocaleString()}</div>
+            </div>
+          </div>
+          
+          <h3 style={{ fontSize: '18px', marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>Breakdown by Category</h3>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '12px' }}>
+            {categories.map(cat => {
+              const count = escalations.filter(e => (e.category || 'Maintenance') === cat).length;
+              if (count === 0) return null;
+              return (
+                <li key={cat} style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
+                  <span style={{ fontWeight: 600 }}>{cat}</span>
+                  <span style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '2px 10px', borderRadius: '20px', fontWeight: 700 }}>{count}</span>
+                </li>
+              );
+            })}
+          </ul>
+
+          <div style={{ marginTop: '40px', display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+            <button style={{ ...secondaryButtonStyle, padding: '12px 24px' }} onClick={onClose}>Cancel</button>
+            <button 
+              className="btn-primary" 
+              style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '8px' }}
+              onClick={() => {
+                window.print();
+              }}
+            >
+              <FileText size={18} /> Print / Save PDF
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+const modalOverlayStyle = {
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(15, 23, 42, 0.6)',
+  backdropFilter: 'blur(8px)',
+  zIndex: 1000,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '20px'
+};
+
+const modalContentStyle = {
+  background: 'white',
+  width: '100%',
+  maxWidth: '600px',
+  borderRadius: '24px',
+  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+  overflow: 'hidden',
+  display: 'flex',
+  flexDirection: 'column',
+  maxHeight: '90vh'
+};
+
+const modalHeaderStyle = {
+  padding: '24px 30px',
+  borderBottom: '1px solid #e2e8f0',
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  background: '#f8fafc'
+};
+
+const closeButtonStyle = {
+  background: 'transparent',
+  border: 'none',
+  fontSize: '28px',
+  color: 'var(--text-muted)',
+  cursor: 'pointer',
+  padding: '0',
+  lineHeight: 1,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '32px',
+  height: '32px',
+  borderRadius: '50%',
+  transition: 'background-color 0.2s'
+};
+
+const modalBodyStyle = {
+  padding: '30px',
+  overflowY: 'auto'
 };
 
 export default EscalationHub;

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertTriangle,
@@ -267,6 +268,7 @@ const HighlightedText = ({ text, highlight }) => {
 };
 
 const AlertsPanel = ({ filter, setFilter, filteredAlerts, overviewStats }) => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchRef = useRef(null);
@@ -397,33 +399,14 @@ const AlertsPanel = ({ filter, setFilter, filteredAlerts, overviewStats }) => {
       </p>
     </section>
 
-    <section style={controlsRowStyle}>
-      <div style={filterGroupStyle}>
-        <div style={filterLabelStyle}>Severity</div>
-        {severityOptions.map((option) => (
-          <button
-            key={option}
-            onClick={() => setFilter(option)}
-            style={{
-              ...filterChipStyle,
-              background: filter === option ? 'white' : 'transparent',
-              color: filter === option ? 'var(--primary)' : 'var(--text)',
-              boxShadow: filter === option ? '0 6px 20px rgba(15, 23, 42, 0.08)' : 'none'
-            }}
-          >
-            {option}
-          </button>
-        ))}
-      </div>
-
-      <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
-        <button style={typeButtonStyle}>
-          All Alert Types <ChevronDown size={16} />
-        </button>
-        <button className="btn-primary" style={{ padding: '16px 22px', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 14px 26px rgba(0, 82, 204, 0.22)' }}>
-          <FilePlus2 size={18} /> New Report
-        </button>
-      </div>
+    <section style={{ ...controlsRowStyle, justifyContent: 'flex-end' }}>
+      <button 
+        onClick={() => navigate('/report')}
+        className="btn-primary" 
+        style={{ padding: '16px 22px', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 14px 26px rgba(0, 82, 204, 0.22)' }}
+      >
+        <FilePlus2 size={18} /> New Report
+      </button>
     </section>
 
     <section style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '22px', alignItems: 'start' }}>

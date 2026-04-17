@@ -63,8 +63,8 @@ const AdminLogin = () => {
 
   return (
     <div style={terminalContainerStyle}>
-      {/* Dynamic Security Grid Background */}
-      <div style={gridBackgroundStyle} />
+      {/* Background Effects */}
+      <div style={glowingOrbStyle} />
       
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
@@ -73,7 +73,7 @@ const AdminLogin = () => {
       >
         <div style={headerStyle}>
           <div style={logoContainerStyle}>
-            <Shield size={32} color="#10b981" />
+            <Shield size={32} color="var(--primary)" />
           </div>
           <h1 style={titleStyle}>INFRAMIND_ADMIN</h1>
           <p style={subtitleStyle}>MUNICIPAL INFRASTRUCTURE CONTROL GATEWAY</p>
@@ -156,194 +156,180 @@ const AdminLogin = () => {
   );
 };
 
-// Terminal UI Styles
+// Standard UI Styles (Clean Modern Light Theme)
 const terminalContainerStyle = {
   minHeight: '100vh',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  background: '#050505', // Pure black
-  color: '#c0c0c0',
-  fontFamily: '"JetBrains Mono", "Fira Code", monospace',
-  padding: '24px',
+  padding: '2rem',
+  background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
   position: 'relative',
-  overflow: 'hidden'
+  overflow: 'hidden',
+  boxSizing: 'border-box',
+  fontFamily: '"Inter", sans-serif'
 };
 
-const gridBackgroundStyle = {
+const glowingOrbStyle = {
   position: 'absolute',
-  inset: 0,
-  backgroundImage: `
-    linear-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(16, 185, 129, 0.05) 1px, transparent 1px)
-  `,
-  backgroundSize: '40px 40px',
-  zIndex: 0
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: '600px',
+  height: '600px',
+  background: 'radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 60%)',
+  borderRadius: '50%',
+  zIndex: 0,
+  pointerEvents: 'none'
 };
+
+const gridBackgroundStyle = { display: 'none' };
 
 const portalCardStyle = {
   width: '100%',
-  maxWidth: '460px',
-  padding: '50px',
-  background: 'rgba(10, 10, 10, 0.9)',
-  border: '1px solid #1a1a1a',
-  borderRadius: '4px', // Hard edges for terminal feel
-  boxShadow: '0 0 40px rgba(0, 0, 0, 1), 0 0 1px rgba(16, 185, 129, 0.2)',
+  maxWidth: '450px',
+  padding: '3rem',
+  background: 'white',
+  border: '1px solid #e2e8f0',
+  boxShadow: '0 10px 40px -10px rgba(0, 0, 0, 0.05)',
+  borderRadius: '24px',
   zIndex: 1,
-  position: 'relative'
+  position: 'relative',
+  boxSizing: 'border-box'
 };
 
 const headerStyle = {
   textAlign: 'center',
-  marginBottom: '40px'
+  marginBottom: '2.5rem'
 };
 
 const logoContainerStyle = {
   display: 'inline-flex',
-  padding: '16px',
-  borderRadius: '50%',
-  background: 'rgba(16, 185, 129, 0.05)',
-  border: '1px solid rgba(16, 185, 129, 0.1)',
-  marginBottom: '20px',
-  boxShadow: '0 0 20px rgba(16, 185, 129, 0.1)'
+  padding: '1rem',
+  borderRadius: '20px',
+  background: 'rgba(59, 130, 246, 0.1)',
+  marginBottom: '1rem'
 };
 
 const titleStyle = {
-  fontSize: '24px',
-  fontWeight: 900,
-  color: '#10b981', // Emerald green
+  fontSize: '2rem',
+  color: '#0f172a',
   margin: 0,
-  letterSpacing: '4px',
-  textShadow: '0 0 10px rgba(16, 185, 129, 0.5)'
+  fontWeight: 800,
+  letterSpacing: '-0.5px'
 };
 
 const subtitleStyle = {
-  fontSize: '10px',
-  color: '#666',
-  marginTop: '8px',
-  letterSpacing: '2px',
-  fontWeight: 700
+  color: '#475569',
+  marginTop: '0.5rem',
+  fontSize: '1rem',
+  fontWeight: 500
 };
 
 const errorStyle = {
-  background: 'rgba(239, 68, 68, 0.05)',
-  border: '1px solid rgba(239, 68, 68, 0.2)',
-  padding: '12px',
+  background: '#fef2f2',
+  border: '1px solid #fecaca',
+  padding: '0.8rem',
+  borderRadius: 'var(--radius-sm)',
   color: '#ef4444',
-  fontSize: '12px',
+  fontSize: '0.9rem',
   display: 'flex',
   alignItems: 'center',
-  gap: '10px',
-  marginBottom: '24px',
-  fontWeight: 700
+  gap: '0.5rem',
+  marginBottom: '1.5rem',
+  fontWeight: 500
 };
 
 const formStyle = {
-  display: 'grid',
-  gap: '24px'
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '1.2rem'
 };
 
 const fieldGroupStyle = {
-  display: 'grid',
-  gap: '10px'
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.5rem'
 };
 
 const labelStyle = {
-  fontSize: '10px',
-  fontWeight: 800,
-  color: '#444',
-  letterSpacing: '1px'
+  fontSize: '0.9rem',
+  fontWeight: 600,
+  color: '#1e293b',
+  display: 'block',
+  textAlign: 'left'
 };
 
 const inputStyle = {
   width: '100%',
-  padding: '12px 12px 12px 48px',
-  background: '#0a0a0a',
-  border: '1px solid #222',
-  color: '#10b981',
-  fontFamily: 'monospace',
-  fontSize: '14px',
+  padding: '0.8rem 1rem 0.8rem 3rem',
+  background: '#f8fafc',
+  border: '1px solid #e2e8f0',
+  borderRadius: '12px',
+  color: '#0f172a',
   outline: 'none',
-  transition: 'all 0.3s ease',
-  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)'
+  fontSize: '1rem',
+  transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+  boxSizing: 'border-box'
 };
 
 const iconStyle = {
   position: 'absolute',
-  left: '16px',
+  left: '1rem',
   top: '50%',
   transform: 'translateY(-50%)',
-  color: '#333',
-  zIndex: 1
+  color: '#64748b'
 };
 
 const submitButtonStyle = {
   width: '100%',
-  padding: '16px',
-  background: 'transparent',
-  border: '1px solid #10b981',
-  color: '#10b981',
-  fontSize: '13px',
-  fontWeight: 900,
-  letterSpacing: '2px',
+  padding: '1rem',
+  background: 'linear-gradient(135deg, var(--primary), #4b7bec)',
+  color: 'white',
+  border: 'none',
+  borderRadius: '12px',
+  fontSize: '1rem',
+  fontWeight: 700,
   cursor: 'pointer',
-  marginTop: '10px',
+  marginTop: '1rem',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   gap: '10px',
-  transition: 'all 0.3s ease',
-  textTransform: 'uppercase'
+  boxShadow: '0 4px 15px rgba(0, 82, 204, 0.2)',
+  transition: 'transform 0.2s ease, box-shadow 0.2s ease'
 };
 
 const footerStyle = {
-  marginTop: '40px',
+  marginTop: '2.5rem',
   textAlign: 'center',
-  borderTop: '1px solid #1a1a1a',
-  paddingTop: '30px'
+  borderTop: '1px solid #e2e8f0',
+  paddingTop: '2rem'
 };
 
 const securityBadgeContainer = {
   display: 'flex',
   justifyContent: 'center',
   gap: '20px',
-  marginBottom: '20px'
+  marginBottom: '1rem'
 };
 
 const badgeItem = {
   display: 'flex',
   alignItems: 'center',
   gap: '6px',
-  fontSize: '9px',
-  color: '#444',
-  fontWeight: 800
+  fontSize: '0.8rem',
+  color: '#64748b',
+  fontWeight: 600
 };
 
 const disclaimerStyle = {
-  color: '#333',
-  fontSize: '9px',
-  lineHeight: 1.8,
-  fontWeight: 700
+  color: '#94a3b8',
+  fontSize: '0.8rem',
+  lineHeight: 1.5
 };
 
-const statusBarLeft = {
-  position: 'absolute',
-  left: '20px',
-  top: '20px',
-  bottom: '20px',
-  width: '2px',
-  background: 'linear-gradient(to bottom, transparent, #10b981, transparent)',
-  opacity: 0.3
-};
-
-const statusBarRight = {
-  position: 'absolute',
-  right: '20px',
-  top: '20px',
-  bottom: '20px',
-  width: '2px',
-  background: 'linear-gradient(to bottom, transparent, #10b981, transparent)',
-  opacity: 0.3
-};
+const statusBarLeft = { display: 'none' };
+const statusBarRight = { display: 'none' };
 
 export default AdminLogin;
