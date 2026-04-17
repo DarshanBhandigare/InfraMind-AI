@@ -13,7 +13,11 @@ import {
   ShieldCheck,
   Activity,
   CheckCircle2,
-  ArrowUpRight
+  ArrowUpRight,
+  Sparkles,
+  Inbox,
+  MessageSquare,
+  X
 } from 'lucide-react';
 import { isAdmin } from '../utils/adminConfig';
 import { db } from '../services/firebase';
@@ -28,6 +32,9 @@ const DashboardLayout = ({ children }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [userReports, setUserReports] = useState([]);
+  const [adminReports, setAdminReports] = useState([]);
+  const [adminSuggestions, setAdminSuggestions] = useState([]);
+  const [adminInquiries, setAdminInquiries] = useState([]);
   const searchRef = useRef(null);
   const notificationsRef = useRef(null);
 
@@ -54,6 +61,35 @@ const DashboardLayout = ({ children }) => {
 
     return unsubscribe;
   }, [isAdminRoute, user]);
+
+  useEffect(() => {
+    if (!isAdminRoute) {
+      setAdminSuggestions([]);
+      setAdminInquiries([]);
+      return;
+    }
+
+    const unsubReports = onSnapshot(collection(db, 'reports'), (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setAdminReports(data.sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)).slice(0, 50));
+    });
+
+    const unsubSuggestions = onSnapshot(collection(db, 'suggestions'), (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setAdminSuggestions(data.sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)).slice(0, 3));
+    });
+
+    const unsubInquiries = onSnapshot(collection(db, 'contacts'), (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setAdminInquiries(data.sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)).slice(0, 30));
+    });
+
+    return () => {
+      unsubReports();
+      unsubSuggestions();
+      unsubInquiries();
+    };
+  }, [isAdminRoute]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -136,16 +172,25 @@ const DashboardLayout = ({ children }) => {
           }
         ];
 
-    const reportItems = userReports.slice(0, 8).map((report) => ({
+    const reportSource = isAdminRoute ? adminReports : userReports;
+    const reportItems = reportSource.slice(0, 20).map((report) => ({
       id: `report-${report.id}`,
       kind: 'report',
       title: report.type || 'Untitled report',
-      subtitle: `${report.status || 'Unknown status'}${report.address ? ` • ${report.address}` : ''}`,
-      action: () => navigate('/map')
+      subtitle: `${report.status || 'Unknown status'}${report.displayAddress ? ` • ${report.displayAddress}` : ''}`,
+      action: () => navigate(`/admin/dashboard?id=${report.id}`)
     }));
 
-    return [...routeItems, ...reportItems];
-  }, [isAdminRoute, navigate, userReports]);
+    const inquiryItems = isAdminRoute ? adminInquiries.map(inquiry => ({
+      id: `inquiry-${inquiry.id}`,
+      kind: 'contact',
+      title: inquiry.name,
+      subtitle: `Citizen Inquiry • ${inquiry.email}`,
+      action: () => navigate(`/admin/inquiries?id=${inquiry.id}`)
+    })) : [];
+
+    return [...routeItems, ...reportItems, ...inquiryItems];
+  }, [isAdminRoute, navigate, userReports, adminReports, adminInquiries]);
 
   const filteredSearchTargets = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -221,6 +266,54 @@ const DashboardLayout = ({ children }) => {
               <>
                 <div style={sectionLabelStyle(true)}>Command Centre</div>
                 <SidebarLink to="/admin/dashboard" icon={<Wrench size={20} />} label="Reports Console" isAdmin={true} />
+                <SidebarLink to="/admin/inquiries" icon={<Inbox size={20} />} label="Inquiries Console" isAdmin={true} />
+                <SidebarLink to="/admin/improvements" icon={<Sparkles size={20} />} label="Improvement Console" isAdmin={true} />
+
+                {/* Public Improvement Feed Widget */}
+                <div style={{ marginTop: '32px' }}>
+                  <div style={sectionLabelStyle(true)}>Public Improvement Feed</div>
+                  <div style={{ display: 'grid', gap: '8px', padding: '0 16px' }}>
+                    {adminSuggestions.length > 0 ? adminSuggestions.map(suggestion => (
+                      <div key={suggestion.id} className="glass-premium" style={sidebarWidgetCardStyle}>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <Sparkles size={14} color="#2563eb" style={{ flexShrink: 0, marginTop: '2px' }} />
+                          <div style={{ fontSize: '11px', lineHeight: 1.4, fontWeight: 600, color: '#0f172a' }}>
+                            "{suggestion.text}"
+                          </div>
+                        </div>
+                        <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '6px', textAlign: 'right' }}>
+                          — {suggestion.userEmail?.split('@')[0]}
+                        </div>
+                      </div>
+                    )) : (
+                      <div style={emptyWidgetStyle}>No recent suggestions</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Latest Queries Widget */}
+                <div style={{ marginTop: '24px' }}>
+                  <div style={sectionLabelStyle(true)}>Latest Queries</div>
+                  <div style={{ display: 'grid', gap: '8px', padding: '0 16px' }}>
+                    {adminInquiries.length > 0 ? adminInquiries.map(inquiry => (
+                      <div key={inquiry.id} className="glass-premium" style={sidebarWidgetCardStyle}>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <MessageSquare size={14} color="#0f766e" style={{ flexShrink: 0, marginTop: '2px' }} />
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: '11px', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {inquiry.name}
+                            </div>
+                            <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px', lineHeight: 1.3 }}>
+                              {inquiry.message?.substring(0, 45)}...
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )) : (
+                      <div style={emptyWidgetStyle}>No recent inquiries</div>
+                    )}
+                  </div>
+                </div>
               </>
             ) : (
               // Standard Citizen Navigation
@@ -247,17 +340,36 @@ const DashboardLayout = ({ children }) => {
       {/* Main Content Area */}
       <main style={mainContentStyle}>
         <header style={{ ...topBarStyle, ...themeStyle.topBar }}>
-          <div ref={searchRef} style={{ position: 'relative', width: '440px' }}>
-            <Search size={18} style={searchIconStyle(isAdminRoute)} />
-            <input 
-              style={searchInputStyle(isAdminRoute)}
-              className="input-field" 
-              placeholder={isAdminRoute ? "Search reports and admin tools..." : "Search pages, reports, or locations..."} 
+          <div ref={searchRef} style={{ position: 'relative', width: '400px' }}>
+            <Search size={18} style={topSearchIconStyle} />
+            <input
+              style={topSearchInputStyle}
+              placeholder="Search reports and admin tools..."
               value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
               onFocus={() => setIsSearchOpen(true)}
+              onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleSearchKeyDown}
             />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+              >
+                <X size={16} />
+              </button>
+            )}
+
             {isSearchOpen && (
               <div style={searchDropdownStyle(isAdminRoute)}>
                 <div style={searchDropdownHeaderStyle}>Quick search</div>
@@ -343,11 +455,12 @@ const SidebarLink = ({ to, icon, label, isAdmin }) => (
       padding: '12px 16px',
       borderRadius: '12px',
       color: isActive 
-        ? (isAdmin ? '#10b981' : 'var(--primary)') 
+        ? (isAdmin ? '#0052cc' : 'var(--primary)') 
         : (isAdmin ? '#64748b' : 'var(--text-muted)'),
       background: isActive 
-        ? (isAdmin ? 'rgba(16, 185, 129, 0.1)' : '#EBF2FF') 
+        ? (isAdmin ? 'rgba(0, 82, 204, 0.1)' : '#EBF2FF') 
         : 'transparent',
+      borderLeft: isActive && isAdmin ? '4px solid #0052cc' : 'none',
       textDecoration: 'none',
       fontSize: '14px',
       fontWeight: isActive ? 700 : 500,
@@ -367,9 +480,9 @@ const publicTheme = {
 };
 
 const adminTheme = {
-  container: { background: 'linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%)' },
-  sidebar: { background: 'rgba(255, 255, 255, 0.92)', borderRight: '1px solid #dbe4f0', backdropFilter: 'blur(18px)' },
-  topBar: { background: 'rgba(248, 251, 255, 0.88)', backdropFilter: 'blur(18px)', borderBottom: '1px solid #dbe4f0' }
+  container: { background: 'linear-gradient(135deg, #f0f7ff 0%, #ffffff 50%, #f0f7ff 100%)' },
+  sidebar: { background: 'rgba(255, 255, 255, 0.5)', borderRight: '1px solid rgba(255, 255, 255, 0.3)', backdropFilter: 'blur(32px)' },
+  topBar: { background: 'rgba(255, 255, 255, 0.3)', backdropFilter: 'blur(32px)', borderBottom: '1px solid rgba(255, 255, 255, 0.3)' }
 };
 
 // Styles
@@ -616,4 +729,41 @@ const emptyDropdownStateStyle = {
   color: '#64748b'
 };
 
+const sidebarWidgetCardStyle = {
+  padding: '12px',
+  borderRadius: '12px',
+  background: 'rgba(255, 255, 255, 0.5)',
+  border: '1px solid rgba(255, 255, 255, 0.8)',
+  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)'
+};
+
+const emptyWidgetStyle = {
+  fontSize: '11px',
+  color: '#94a3b8',
+  fontStyle: 'italic',
+  padding: '10px',
+  textAlign: 'center'
+};
+
 export default DashboardLayout;
+const topSearchIconStyle = {
+  position: 'absolute',
+  left: '14px',
+  top: '50%',
+  transform: 'translateY(-50%)',
+  color: '#94a3b8',
+  zIndex: 1
+};
+
+const topSearchInputStyle = {
+  width: '100%',
+  padding: '12px 14px 12px 42px',
+  borderRadius: '16px',
+  border: '1px solid rgba(255, 255, 255, 0.3)',
+  fontSize: '14px',
+  outline: 'none',
+  background: 'rgba(255, 255, 255, 0.4)',
+  backdropFilter: 'blur(10px)',
+  boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+  transition: 'all 0.2s'
+};

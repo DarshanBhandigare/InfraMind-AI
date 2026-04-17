@@ -13,7 +13,9 @@ import {
   FileText,
   Award,
   Zap,
-  Hammer
+  Hammer,
+  X,
+  Check
 } from 'lucide-react';
 import { collection, onSnapshot, query, where, orderBy, serverTimestamp } from 'firebase/firestore';
 import { db } from '../services/firebase';
@@ -26,6 +28,25 @@ const EscalationHub = () => {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [showReportModal, setShowReportModal] = useState(false);
+  const [selectedReportIds, setSelectedReportIds] = useState(new Set());
+
+  const toggleReportSelection = (id) => {
+    setSelectedReportIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAllFiltered = () => {
+    const allFilteredIds = filteredEscalations.map(e => e.id);
+    setSelectedReportIds(new Set(allFilteredIds));
+  };
+
+  const clearSelection = () => {
+    setSelectedReportIds(new Set());
+  };
 
   const filteredEscalations = useMemo(() => {
     let list = escalations.filter(e => e.isDelayed || e.status === 'Escalated');
@@ -38,6 +59,14 @@ const EscalationHub = () => {
   const totalEscalationCost = useMemo(() => {
     return filteredEscalations.reduce((acc, curr) => acc + (curr.aiData?.estimatedCost || 0), 0);
   }, [filteredEscalations]);
+
+  const selectedEscalations = useMemo(() => {
+    return filteredEscalations.filter(e => selectedReportIds.has(e.id));
+  }, [filteredEscalations, selectedReportIds]);
+
+  const selectedTotalCost = useMemo(() => {
+    return selectedEscalations.reduce((acc, curr) => acc + (curr.aiData?.estimatedCost || 0), 0);
+  }, [selectedEscalations]);
 
   useEffect(() => {
     // Standard query for reports
@@ -94,16 +123,25 @@ const EscalationHub = () => {
             Complaints unresolved for over 10 days are automatically listed here. 
             NGOs and private contractors can take ownership to ensure no issue is left behind.
           </p>
-          <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-            <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Zap size={18} /> View Urgent Tasks
-            </button>
+          <div style={{ display: 'flex', gap: '12px', marginTop: '24px', alignItems: 'center' }}>
             <button 
-              onClick={() => setShowReportModal(true)}
-              style={secondaryButtonStyle}
+              onClick={() => {
+                if (selectedReportIds.size === 0) {
+                  alert("Please select at least one delayed complaint to generate a report.");
+                  return;
+                }
+                setShowReportModal(true);
+              }}
+              className="btn-primary"
+              style={{ ...secondaryButtonStyle, background: selectedReportIds.size > 0 ? 'var(--primary)' : 'white', color: selectedReportIds.size > 0 ? 'white' : 'var(--text-muted)' }}
             >
-              <FileText size={18} /> Generate Hub Report
+              <FileText size={18} /> {selectedReportIds.size > 0 ? `Generate Report for ${selectedReportIds.size} Selected` : 'Generate Delayed Complaints Report'}
             </button>
+            {selectedReportIds.size > 0 && (
+              <button onClick={clearSelection} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
+                Clear Selection
+              </button>
+            )}
           </div>
         </motion.div>
 
@@ -150,6 +188,8 @@ const EscalationHub = () => {
                   <EscalationCard 
                     key={item.id} 
                     item={item} 
+                    isSelected={selectedReportIds.has(item.id)}
+                    onToggle={() => toggleReportSelection(item.id)}
                     onAccept={(org) => handleAcceptTask(item.id, org)}
                   />
                 ))}
@@ -158,11 +198,65 @@ const EscalationHub = () => {
           )}
         </div>
       </div>
+
+      <AnimatePresence>
+        {showReportModal && (
+          <div style={modalOverlayStyle}>
+             <motion.div 
+               initial={{ opacity: 0, scale: 0.9 }}
+               animate={{ opacity: 1, scale: 1 }}
+               exit={{ opacity: 0, scale: 0.9 }}
+               style={modalContentStyle}
+             >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                  <h2 style={{ margin: 0, fontSize: '24px' }}>Executive Hub Report</h2>
+                  <button onClick={() => setShowReportModal(false)} style={iconButtonStyle}><X size={20}/></button>
+                </div>
+
+                <div style={reportSummaryGridStyle}>
+                  <div style={reportStatStyle}>
+                    <div style={infoLabelStyle}>Selected</div>
+                    <div style={{ fontSize: '20px', fontWeight: 800 }}>{selectedReportIds.size}</div>
+                  </div>
+                  <div style={reportStatStyle}>
+                    <div style={infoLabelStyle}>Total Budget</div>
+                    <div style={{ fontSize: '20px', fontWeight: 800 }}>₹{(selectedTotalCost / 100000).toFixed(1)}L</div>
+                  </div>
+                  <div style={reportStatStyle}>
+                    <div style={infoLabelStyle}>Priority High</div>
+                    <div style={{ fontSize: '20px', fontWeight: 800 }}>{selectedEscalations.filter(e => e.category === 'Critical').length}</div>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '24px', maxHeight: '200px', overflowY: 'auto', border: '1px solid #f1f5f9', borderRadius: '12px', padding: '12px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '10px' }}>INCLUDED COMPLAINTS:</div>
+                  {selectedEscalations.map(esc => (
+                    <div key={esc.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f8fafc', fontSize: '13px' }}>
+                      <div style={{ fontWeight: 600 }}>{esc.type}</div>
+                      <div style={{ color: 'var(--text-muted)' }}>{esc.address?.split(',')[0]}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <button 
+                  onClick={() => {
+                    alert(`Generating report for ${selectedReportIds.size} complaints...`);
+                    setShowReportModal(false);
+                  }}
+                  className="btn-primary" 
+                  style={{ width: '100%', marginTop: '30px', padding: '16px', display: 'flex', justifyContent: 'center', gap: '8px', borderRadius: '14px' }}
+                >
+                  <FileText size={18} /> Download Selection as PDF
+                </button>
+             </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
-const EscalationCard = ({ item, onAccept }) => {
+const EscalationCard = ({ item, isSelected, onToggle, onAccept }) => {
   const [showDetails, setShowDetails] = useState(false);
 
   return (
@@ -171,8 +265,27 @@ const EscalationCard = ({ item, onAccept }) => {
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      style={cardStyle}
+      style={{ ...cardStyle, border: isSelected ? '2px solid var(--primary)' : '1px solid #f1f5f9', background: isSelected ? '#f8fbff' : 'white' }}
     >
+      <div style={{ position: 'absolute', top: '24px', right: '24px', zIndex: 10 }}>
+        <button 
+          onClick={(e) => { e.stopPropagation(); onToggle(); }}
+          style={{ 
+            width: '28px', 
+            height: '28px', 
+            borderRadius: '8px', 
+            border: isSelected ? 'none' : '2px solid #cbd5e1', 
+            background: isSelected ? 'var(--primary)' : 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          {isSelected && <Check size={18} color="white" strokeWidth={3} />}
+        </button>
+      </div>
       <div style={cardHeaderStyle}>
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
@@ -545,6 +658,43 @@ const emptyStateStyle = {
   background: 'white',
   borderRadius: '24px',
   border: '2px dashed #e2e8f0'
+};
+
+const modalOverlayStyle = {
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  background: 'rgba(0,0,0,0.4)',
+  backdropFilter: 'blur(8px)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 3000,
+  padding: '20px'
+};
+
+const modalContentStyle = {
+  background: 'white',
+  padding: '40px',
+  borderRadius: '32px',
+  width: '100%',
+  maxWidth: '600px',
+  boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)'
+};
+
+const reportSummaryGridStyle = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(3, 1fr)',
+  gap: '16px'
+};
+
+const reportStatStyle = {
+  background: '#f1f5f9',
+  padding: '16px',
+  borderRadius: '16px',
+  textAlign: 'center'
 };
 
 export default EscalationHub;

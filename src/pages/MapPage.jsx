@@ -1,9 +1,19 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Circle, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { collection, onSnapshot } from 'firebase/firestore';
 import L from 'leaflet';
-import { Activity, AlertTriangle, CheckCircle2, Lightbulb, Share2, Waves, X } from 'lucide-react';
+import {
+  Activity,
+  AlertTriangle,
+  Check,
+  Lightbulb,
+  MapPin,
+  ShieldAlert,
+  SlidersHorizontal,
+  Waves,
+  X
+} from 'lucide-react';
 import { db } from '../services/firebase';
 import { processReport } from '../services/dataSyncService';
 
@@ -26,8 +36,6 @@ const MUMBAI_BOUNDS = {
   minLng: 72.0,
   maxLng: 74.0
 };
-
-// Demo reports removed in favor of live Firebase data
 
 const isInMumbaiRegion = (location) => {
   if (!location || typeof location.lat !== 'number' || typeof location.lng !== 'number') {
@@ -78,6 +86,9 @@ const MapPage = () => {
   const [reports, setReports] = useState([]);
   const [selectedIssueId, setSelectedIssueId] = useState(null);
   const autoSelectedRef = useRef(false);
+  const [viewportWidth, setViewportWidth] = useState(() =>
+    typeof window === 'undefined' ? 1440 : window.innerWidth
+  );
   const [issueFilters, setIssueFilters] = useState({
     Potholes: true,
     Drainage: true,
@@ -99,6 +110,13 @@ const MapPage = () => {
     });
 
     return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => setViewportWidth(window.innerWidth);
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const baseReports = useMemo(() => {
@@ -129,6 +147,21 @@ const MapPage = () => {
     [displayReports, selectedIssueId]
   );
 
+  const severitySummary = useMemo(
+    () =>
+      displayReports.reduce(
+        (acc, report) => {
+          const score = Number(report.score) || 0;
+          if (score >= 80) acc.critical += 1;
+          else if (score >= 55) acc.medium += 1;
+          else acc.low += 1;
+          return acc;
+        },
+        { critical: 0, medium: 0, low: 0 }
+      ),
+    [displayReports]
+  );
+
   useEffect(() => {
     if (!displayReports.length) {
       if (selectedIssueId) setSelectedIssueId(null);
@@ -143,222 +176,218 @@ const MapPage = () => {
     }
   }, [displayReports, selectedIssueId]);
 
+  const isTablet = viewportWidth < 1280;
+  const isMobile = viewportWidth < 960;
+
   return (
-    <div style={{ height: 'calc(100vh - 72px)', marginTop: '72px', display: 'flex', background: '#f6f0e8' }}>
-      <aside style={{ width: '320px', padding: '32px', borderRight: '1px solid var(--border)', background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(12px)', display: 'flex', flexDirection: 'column', gap: '32px', zIndex: 1001 }}>
-        <div>
-          <h4 style={sidebarHeadingStyle}>Issue Type</h4>
-          <div style={{ display: 'grid', gap: '12px', marginTop: '16px' }}>
-            <FilterCheckbox
-              label="Potholes"
-              checked={issueFilters.Potholes}
-              onChange={() => toggleIssueFilter('Potholes', setIssueFilters)}
-            />
-            <FilterCheckbox
-              label="Drainage"
-              checked={issueFilters.Drainage}
-              onChange={() => toggleIssueFilter('Drainage', setIssueFilters)}
-            />
-            <FilterCheckbox
-              label="Lighting"
-              checked={issueFilters.Lighting}
-              onChange={() => toggleIssueFilter('Lighting', setIssueFilters)}
-            />
-            <FilterCheckbox
-              label="Water Leakage"
-              checked={issueFilters['Water Leakage']}
-              onChange={() => toggleIssueFilter('Water Leakage', setIssueFilters)}
-            />
-            <FilterCheckbox
-              label="Traffic System"
-              checked={issueFilters['Traffic System']}
-              onChange={() => toggleIssueFilter('Traffic System', setIssueFilters)}
-            />
-          </div>
-        </div>
+    <div style={mapShellStyle(isMobile)}>
+      <div style={mapAmbientGlowStyle} />
 
-        <div>
-          <h4 style={sidebarHeadingStyle}>Severity</h4>
-          <div style={{ display: 'grid', gap: '8px', marginTop: '16px' }}>
-            <SeverityPill label="High / Critical" color="#fee2e2" textColor="#b91c1c" icon="!" />
-            <SeverityPill label="Medium Risk" color="#fef3c7" textColor="#92400e" icon="^" />
-            <SeverityPill label="Low Priority" color="#dcfce7" textColor="#15803d" icon="+" />
-          </div>
-        </div>
+      <MapContainer
+        center={MUMBAI_CENTER}
+        zoom={12}
+        style={mapCanvasStyle(isTablet, isMobile)}
+        zoomControl={false}
+      >
+        <MapFocus issue={selectedIssue} />
+        <TileLayer
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          attribution="&copy; CARTO"
+        />
 
-        <div className="card" style={{ padding: '18px 20px', display: 'grid', gap: '12px' }}>
-          <div style={{ ...sidebarHeadingStyle, color: 'var(--primary)' }}>BMC Mumbai Demo Layer</div>
-          <div style={{ fontSize: '14px', lineHeight: 1.6, color: 'var(--text-muted)' }}>
-            The map shows approved reports around Mumbai using the actual evidence submitted by citizens.
-          </div>
-          {!displayReports.length && (
-            <div style={{ fontSize: '12px', color: '#b45309', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '12px', padding: '10px 12px' }}>
-              No approved issues match the selected filters right now.
+        {displayReports.map((report) => (
+          <React.Fragment key={report.id}>
+            <Circle
+              center={[report.location.lat, report.location.lng]}
+              radius={report.isDelayed ? 450 : 300}
+              pathOptions={{
+                fillColor: report.color,
+                color: report.color,
+                fillOpacity: report.isDelayed ? 0.38 : 0.18,
+                weight: report.isDelayed ? 2 : 1,
+                dashArray: report.isDelayed ? [5, 5] : null
+              }}
+            />
+            <Marker
+              position={[report.location.lat, report.location.lng]}
+              eventHandlers={{ click: () => setSelectedIssueId(report.id) }}
+            />
+          </React.Fragment>
+        ))}
+      </MapContainer>
+
+      <aside style={mapSidebarStyle(isTablet, isMobile)}>
+        <div style={sidebarHeroCardStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
+            <div>
+              <div style={eyebrowStyle}>Live Operations Map</div>
+              <h2 style={sidebarTitleStyle}>Mumbai civic signals, cleaned up and ready to scan.</h2>
+              <p style={sidebarSubtitleStyle}>
+                Filter approved reports, inspect hotspots, and jump straight into the most urgent citizen evidence.
+              </p>
             </div>
-          )}
+            <div style={sidebarBadgeStyle}>
+              <Activity size={18} color="#2563eb" />
+            </div>
+          </div>
+
+          <div style={sidebarStatGridStyle}>
+            <MiniStat label="Visible reports" value={displayReports.length} />
+            <MiniStat label="Critical" value={severitySummary.critical} tone="critical" />
+            <MiniStat label="Selected zone" value={selectedIssue ? '1' : '0'} />
+          </div>
+        </div>
+
+        <div style={sidebarSectionStyle}>
+          <div style={sectionHeaderRowStyle}>
+            <h4 style={sidebarHeadingStyle}>Issue Type</h4>
+            <div style={sectionPillStyle}>
+              <SlidersHorizontal size={12} />
+              Filters
+            </div>
+          </div>
+          <div style={{ display: 'grid', gap: '10px', marginTop: '12px' }}>
+            {Object.keys(issueFilters).map((key) => (
+              <FilterCheckbox
+                key={key}
+                label={key}
+                checked={issueFilters[key]}
+                onChange={() => toggleIssueFilter(key, setIssueFilters)}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div style={sidebarSectionStyle}>
+          <h4 style={sidebarHeadingStyle}>Severity</h4>
+          <div style={{ display: 'grid', gap: '10px', marginTop: '12px' }}>
+            <SeverityPill
+              label="High / Critical"
+              color="#fff1f2"
+              textColor="#b91c1c"
+              accent="#ef4444"
+              icon="!"
+              count={severitySummary.critical}
+            />
+            <SeverityPill
+              label="Medium Risk"
+              color="#fffbeb"
+              textColor="#a16207"
+              accent="#f59e0b"
+              icon="^"
+              count={severitySummary.medium}
+            />
+            <SeverityPill
+              label="Low Priority"
+              color="#ecfdf5"
+              textColor="#15803d"
+              accent="#22c55e"
+              icon="+"
+              count={severitySummary.low}
+            />
+          </div>
+        </div>
+
+        <div className="card" style={reportLayerCardStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center' }}>
+            <div style={{ ...sidebarHeadingStyle, color: 'var(--primary)', fontSize: '11px' }}>BMC Mumbai Demo Layer</div>
+            <div style={mapLiveBadgeStyle}>
+              <span style={liveDotStyle} />
+              Live
+            </div>
+          </div>
+          <div style={{ fontSize: '14px', lineHeight: 1.6, color: 'var(--text-muted)' }}>
+            Map shows approved reports using citizen evidence.
+          </div>
           <div style={{ display: 'grid', gap: '10px' }}>
             {displayReports.slice(0, 3).map((report) => (
               <button
                 key={report.id}
                 onClick={() => setSelectedIssueId(report.id)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '12px',
-                  borderRadius: '14px',
-                  background: selectedIssue?.id === report.id ? '#eef4ff' : '#f8f9fb',
-                  border: selectedIssue?.id === report.id ? '1px solid #bfd4ff' : '1px solid transparent',
-                  textAlign: 'left'
-                }}
+                style={reportListItemStyle(selectedIssue?.id === report.id)}
               >
                 <IssueIcon issueType={report.type} color={report.color} />
-                <div>
-                  <div style={{ fontSize: '13px', fontWeight: 700 }}>{report.type}</div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{report.displayAddress}</div>
+                <div style={{ overflow: 'hidden', flex: 1 }}>
+                  <div style={reportTitleStyle}>{report.type}</div>
+                  <div style={reportSubtitleStyle}>{report.displayAddress}</div>
                 </div>
+                <div style={reportScoreChipStyle(report.color)}>{report.score}</div>
               </button>
             ))}
-          </div>
-        </div>
-
-        <div style={{ marginTop: 'auto' }}>
-          <div className="pill pill-blue" style={{ width: '100%', padding: '12px', justifyContent: 'center', fontSize: '13px' }}>
-            <Activity size={14} /> System Health: 98.4%
+            {!displayReports.length && (
+              <div style={emptySidebarStateStyle}>No approved reports match the current filter set.</div>
+            )}
           </div>
         </div>
       </aside>
 
-      <div style={{ flex: 1, position: 'relative' }}>
-        <MapContainer center={MUMBAI_CENTER} zoom={12} style={{ height: '100%', width: '100%' }} zoomControl={false}>
-          <MapFocus issue={selectedIssue} />
-          <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-            attribution="&copy; CARTO"
-          />
-
-          {displayReports.map((report) => (
-            <React.Fragment key={report.id}>
-              <Circle
-                center={[report.location.lat, report.location.lng]}
-                radius={report.isDelayed ? 450 : 300}
-                pathOptions={{
-                  fillColor: report.color,
-                  color: report.color,
-                  fillOpacity: report.isDelayed ? 0.4 : 0.2,
-                  weight: report.isDelayed ? 2 : 1,
-                  dashArray: report.isDelayed ? [5, 5] : null
-                }}
-              />
-              <Marker
-                position={[report.location.lat, report.location.lng]}
-                eventHandlers={{ click: () => setSelectedIssueId(report.id) }}
-              />
-            </React.Fragment>
-          ))}
-        </MapContainer>
-
-        {selectedIssue && (
-          <div
-            className="glass-card"
-            style={{
-              position: 'absolute',
-              top: '40px',
-              left: '40px',
-              width: '430px',
-              zIndex: 1000,
-              padding: 0,
-              overflow: 'hidden',
-              border: '1px solid rgba(255,255,255,0.45)',
-              background: 'rgba(255,255,255,0.68)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              boxShadow: '0 24px 44px rgba(23, 43, 77, 0.18)'
-            }}
-          >
-            <div style={{ padding: '24px 24px 0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 800, color: '#991b1b', background: '#fee2e2', padding: '4px 10px', borderRadius: '6px', letterSpacing: '1px' }}>
-                  REF: {selectedIssue.id.substring(0, 8).toUpperCase()}
-                </span>
-                <button
-                  onClick={() => setSelectedIssueId(null)}
-                  style={{ background: 'transparent', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                  aria-label="Close"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              <h2 style={{ fontSize: '24px', marginBottom: '8px', lineHeight: 1.15 }}>{selectedIssue.type}</h2>
+      {selectedIssue && (
+        <div style={detailPanelStyle(isTablet, isMobile)}>
+          <div style={{ padding: '24px 24px 0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+              <span style={referenceChipStyle}>REF: {selectedIssue.id.substring(0, 8).toUpperCase()}</span>
+              <button onClick={() => setSelectedIssueId(null)} style={closeButtonStyle} aria-label="Close">
+                <X size={20} />
+              </button>
             </div>
-
-            <div style={{ position: 'relative', height: '220px', padding: '0 24px' }}>
-              {selectedIssue.image ? (
-                <img src={selectedIssue.image} alt={selectedIssue.type} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '24px' }} />
-              ) : (
-                <div style={emptyImageStyle}>
-                  <AlertTriangle size={28} color="#94a3b8" />
-                  <div style={{ fontSize: '15px', fontWeight: 700, color: '#475569' }}>No uploaded image available</div>
-                  <div style={{ fontSize: '13px', color: '#64748b', textAlign: 'center', maxWidth: '240px' }}>
-                    This approved report did not include a usable evidence image.
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div style={{ padding: '24px' }}>
-              <div style={{ ...detailLabelStyle, marginBottom: '10px' }}>Description</div>
-              <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '18px', lineHeight: 1.6 }}>
-                {selectedIssue.description || 'Identified risk requiring immediate assessment and resolution strategy.'}
-              </p>
-
-              {selectedIssue.isDelayed && (
-                <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '16px', padding: '16px', marginBottom: '24px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <div style={{ ...detailLabelStyle, color: '#0369a1', margin: 0 }}>AI ESTIMATED COST</div>
-                    <div style={{ fontSize: '18px', fontWeight: 800, color: '#0369a1' }}>₹{selectedIssue.aiData.estimatedCost.toLocaleString()}</div>
-                  </div>
-                  <div style={detailLabelStyle}>AI WORK PLAN</div>
-                  <ul style={{ margin: '8px 0 0', paddingLeft: '18px', fontSize: '13px', color: '#0c4a6e', lineHeight: 1.5 }}>
-                    {selectedIssue.aiData.requiredWork.map((step, i) => (
-                      <li key={i}>{step}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-                <div style={detailBoxStyle}>
-                  <div style={detailLabelStyle}>Status</div>
-                  <div style={{ fontWeight: 700, color: selectedIssue.color }}>{selectedIssue.status}</div>
-                </div>
-                <div style={detailBoxStyle}>
-                  <div style={detailLabelStyle}>Impact Score</div>
-                  <div style={{ fontWeight: 700 }}>{selectedIssue.impactLabel}</div>
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '24px' }}>
-                <div style={detailLabelStyle}>Affected Assets</div>
-                <div style={{ display: 'grid', gap: '12px', marginTop: '12px' }}>
-                  {selectedIssue.assets.map((asset) => (
-                    <div key={asset} style={assetRowStyle}>
-                      <CheckCircle2 size={18} color="var(--primary)" />
-                      <span style={{ fontSize: '14px', fontWeight: 500 }}>{asset}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button style={{ ...detailBoxStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px 20px', gap: '8px', cursor: 'pointer', border: 'none' }} aria-label="Share alert">
-                  <Share2 size={18} /> Share
-                </button>
-              </div>
+            <h2 style={{ fontSize: '24px', marginBottom: '10px', lineHeight: 1.15 }}>{selectedIssue.type}</h2>
+            <div style={detailMetaRowStyle}>
+              <DetailMetaChip icon={<MapPin size={14} />} label={selectedIssue.displayAddress || 'Pinned location'} />
+              <DetailMetaChip icon={<ShieldAlert size={14} />} label={`Risk ${selectedIssue.impactLabel}`} />
             </div>
           </div>
-        )}
-      </div>
+
+          <div style={{ position: 'relative', height: isMobile ? '180px' : '220px', padding: '0 24px' }}>
+            {selectedIssue.image ? (
+              <img
+                src={selectedIssue.image}
+                alt={selectedIssue.type}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '24px' }}
+              />
+            ) : (
+              <div style={emptyImageStyle}>
+                <AlertTriangle size={28} color="#94a3b8" />
+                <div style={{ fontSize: '15px', fontWeight: 700, color: '#475569' }}>No uploaded image available</div>
+                <div style={{ fontSize: '13px', color: '#64748b', textAlign: 'center', maxWidth: '240px' }}>
+                  This approved report did not include a usable evidence image.
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div style={{ padding: '24px' }}>
+            <div style={{ ...detailLabelStyle, marginBottom: '10px' }}>Description</div>
+            <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '18px', lineHeight: 1.6 }}>
+              {selectedIssue.description || 'Identified risk requiring immediate assessment and resolution strategy.'}
+            </p>
+
+            <div style={detailStatsGridStyle(isMobile)}>
+              <InfoPanel title="Status" value={selectedIssue.status || 'Action Required'} tone={selectedIssue.color} />
+              <InfoPanel
+                title="Coordinates"
+                value={`${selectedIssue.location.lat.toFixed(4)}, ${selectedIssue.location.lng.toFixed(4)}`}
+              />
+            </div>
+
+            {selectedIssue.isDelayed && selectedIssue.aiData && (
+              <div style={aiPanelStyle}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', gap: '12px' }}>
+                  <div style={{ ...detailLabelStyle, color: '#0369a1', margin: 0 }}>AI ESTIMATED COST</div>
+                  <div style={{ fontSize: '18px', fontWeight: 800, color: '#0369a1' }}>
+                    Rs {selectedIssue.aiData.estimatedCost.toLocaleString()}
+                  </div>
+                </div>
+                <div style={detailLabelStyle}>AI WORK PLAN</div>
+                <ul style={{ margin: '8px 0 0', paddingLeft: '18px', fontSize: '13px', color: '#0c4a6e', lineHeight: 1.5 }}>
+                  {selectedIssue.aiData.requiredWork.map((step, i) => (
+                    <li key={i}>{step}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -371,28 +400,35 @@ const toggleIssueFilter = (key, setIssueFilters) => {
 };
 
 const FilterCheckbox = ({ label, checked, onChange }) => (
-  <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontSize: '14px', fontWeight: 500 }}>
-    <input type="checkbox" checked={checked} onChange={onChange} style={{ width: '18px', height: '18px', accentColor: 'var(--primary)' }} />
-    {label}
+  <label style={filterCheckboxStyle(checked)}>
+    <span style={{ display: 'flex', alignItems: 'center', gap: '12px', color: checked ? '#0f172a' : '#334155' }}>
+      <span style={checkboxIndicatorStyle(checked)}>{checked ? <Check size={13} strokeWidth={3} /> : null}</span>
+      {label}
+    </span>
+    <input type="checkbox" checked={checked} onChange={onChange} style={{ display: 'none' }} />
   </label>
 );
 
-const SeverityPill = ({ label, color, textColor, icon }) => (
+const SeverityPill = ({ label, color, textColor, accent, icon, count }) => (
   <div
     style={{
-      padding: '12px 16px',
+      padding: '14px 16px',
       background: color,
       color: textColor,
-      borderRadius: '12px',
+      borderRadius: '18px',
       fontSize: '14px',
       fontWeight: 700,
       display: 'flex',
       justifyContent: 'space-between',
-      alignItems: 'center'
+      alignItems: 'center',
+      border: `1px solid ${accent}22`
     }}
   >
-    {label}
-    <span>{icon}</span>
+    <div>
+      <div>{label}</div>
+      <div style={{ fontSize: '11px', fontWeight: 700, opacity: 0.72, marginTop: '2px' }}>{count} visible reports</div>
+    </div>
+    <span style={severityIconStyle(accent)}>{icon}</span>
   </div>
 );
 
@@ -400,16 +436,371 @@ const IssueIcon = ({ issueType, color }) => {
   const Icon = getIssueIcon(issueType);
 
   return (
-    <div style={{ width: '36px', height: '36px', borderRadius: '12px', background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+    <div style={{ width: '40px', height: '40px', borderRadius: '14px', background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
       <Icon size={18} color={color} />
     </div>
   );
 };
 
-const detailBoxStyle = {
-  background: '#f8f9fb',
+const MiniStat = ({ label, value, tone = 'default' }) => (
+  <div style={miniStatStyle(tone)}>
+    <div style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</div>
+    <div style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a', lineHeight: 1.1 }}>{value}</div>
+  </div>
+);
+
+const DetailMetaChip = ({ icon, label }) => (
+  <div style={detailMetaChipStyle}>
+    {icon}
+    <span>{label}</span>
+  </div>
+);
+
+const InfoPanel = ({ title, value, tone }) => (
+  <div style={{ ...detailBoxStyle, border: tone ? `1px solid ${tone}33` : '1px solid #e2e8f0' }}>
+    <div style={detailLabelStyle}>{title}</div>
+    <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{value}</div>
+  </div>
+);
+
+const mapShellStyle = (isMobile) => ({
+  height: isMobile ? 'calc(100vh - 104px)' : 'calc(100vh - 128px)',
+  margin: isMobile ? '88px 12px 16px' : '96px 24px 24px',
+  position: 'relative',
+  background:
+    'radial-gradient(circle at top left, rgba(255,255,255,0.9) 0%, rgba(237,242,247,0.86) 24%, rgba(214,228,240,0.85) 100%)',
+  overflow: 'hidden',
+  borderRadius: '32px',
+  boxShadow: '0 24px 60px rgba(15, 23, 42, 0.12)'
+});
+
+const mapAmbientGlowStyle = {
+  position: 'absolute',
+  inset: 0,
+  background:
+    'radial-gradient(circle at 18% 22%, rgba(59,130,246,0.16) 0%, transparent 30%), radial-gradient(circle at 82% 20%, rgba(34,197,94,0.12) 0%, transparent 26%)',
+  pointerEvents: 'none',
+  zIndex: 0
+};
+
+const mapCanvasStyle = (isTablet, isMobile) => ({
+  height: '100%',
+  width: '100%',
+  position: 'relative',
+  zIndex: 1,
+  background: 'linear-gradient(180deg, #edf5ff 0%, #dce9f7 100%)',
+  paddingLeft: isMobile ? 0 : isTablet ? '300px' : '344px',
+  paddingRight: isMobile ? 0 : isTablet ? '300px' : '434px'
+});
+
+const mapSidebarStyle = (isTablet, isMobile) => ({
+  position: 'absolute',
+  top: isMobile ? '16px' : '24px',
+  left: isMobile ? '16px' : '24px',
+  width: isMobile ? 'calc(100% - 32px)' : isTablet ? '276px' : '360px',
+  maxHeight: isMobile ? '48%' : 'calc(100% - 48px)',
+  overflowY: 'auto',
+  overflowX: 'hidden',
+  padding: isMobile ? '18px' : '22px',
+  borderRadius: isMobile ? '24px' : '28px',
+  background: 'rgba(255, 255, 255, 0.76)',
+  backdropFilter: 'blur(22px) saturate(160%)',
+  WebkitBackdropFilter: 'blur(22px) saturate(160%)',
+  border: '1px solid rgba(255, 255, 255, 0.65)',
+  boxShadow: '0 28px 60px rgba(15, 23, 42, 0.16)',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '22px',
+  zIndex: 1001,
+  boxSizing: 'border-box'
+});
+
+const sidebarHeroCardStyle = {
+  padding: '20px',
+  borderRadius: '24px',
+  background: 'linear-gradient(145deg, rgba(255,255,255,0.92) 0%, rgba(239,246,255,0.88) 100%)',
+  border: '1px solid rgba(191,219,254,0.75)',
+  boxShadow: '0 16px 34px rgba(37, 99, 235, 0.08)',
+  display: 'grid',
+  gap: '18px'
+};
+
+const eyebrowStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: '6px 10px',
+  borderRadius: '999px',
+  background: '#eff6ff',
+  color: '#1d4ed8',
+  fontSize: '11px',
+  fontWeight: 800,
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase'
+};
+
+const sidebarTitleStyle = {
+  fontSize: '28px',
+  lineHeight: 1.05,
+  margin: '8px 0 10px',
+  letterSpacing: '-0.03em'
+};
+
+const sidebarSubtitleStyle = {
+  fontSize: '14px',
+  lineHeight: 1.6,
+  color: '#64748b',
+  margin: 0
+};
+
+const sidebarBadgeStyle = {
+  width: '44px',
+  height: '44px',
+  borderRadius: '16px',
+  background: '#ffffff',
+  border: '1px solid rgba(191,219,254,0.9)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexShrink: 0
+};
+
+const sidebarStatGridStyle = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+  gap: '10px'
+};
+
+const miniStatStyle = (tone) => ({
+  padding: '14px',
+  borderRadius: '18px',
+  background: tone === 'critical' ? '#fff1f2' : 'rgba(255,255,255,0.94)',
+  border: tone === 'critical' ? '1px solid #fecdd3' : '1px solid rgba(226,232,240,0.92)'
+});
+
+const sidebarSectionStyle = {
+  padding: '2px 0'
+};
+
+const sectionHeaderRowStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: '12px'
+};
+
+const sectionPillStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '6px',
+  padding: '6px 10px',
+  borderRadius: '999px',
+  background: 'rgba(255,255,255,0.85)',
+  border: '1px solid rgba(226,232,240,0.95)',
+  color: '#64748b',
+  fontSize: '11px',
+  fontWeight: 700
+};
+
+const filterCheckboxStyle = (checked) => ({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: '12px',
+  cursor: 'pointer',
+  fontSize: '14px',
+  fontWeight: 600,
+  padding: '12px 14px',
+  borderRadius: '16px',
+  background: checked ? 'rgba(239,246,255,0.92)' : 'rgba(255,255,255,0.58)',
+  border: checked ? '1px solid rgba(147,197,253,0.9)' : '1px solid rgba(226,232,240,0.95)',
+  boxShadow: checked ? '0 10px 24px rgba(59,130,246,0.08)' : 'none'
+});
+
+const checkboxIndicatorStyle = (checked) => ({
+  width: '20px',
+  height: '20px',
+  borderRadius: '6px',
+  background: checked ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' : '#ffffff',
+  border: checked ? 'none' : '1px solid #cbd5e1',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  color: '#ffffff',
+  fontSize: '12px',
+  fontWeight: 800,
+  flexShrink: 0
+});
+
+const sidebarHeadingStyle = {
+  fontSize: '12px',
+  fontWeight: 800,
+  textTransform: 'uppercase',
+  color: '#64748b',
+  letterSpacing: '0.14em'
+};
+
+const severityIconStyle = (accent) => ({
+  width: '30px',
+  height: '30px',
+  borderRadius: '50%',
+  background: `${accent}18`,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  color: accent
+});
+
+const reportLayerCardStyle = {
+  padding: '18px',
+  display: 'grid',
+  gap: '12px',
+  background: 'rgba(255,255,255,0.68)',
+  borderRadius: '24px',
+  border: '1px solid rgba(226,232,240,0.92)',
+  boxShadow: '0 16px 34px rgba(15, 23, 42, 0.06)',
+  width: '100%',
+  boxSizing: 'border-box'
+};
+
+const mapLiveBadgeStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '8px',
+  fontSize: '11px',
+  fontWeight: 800,
+  color: '#15803d',
+  background: '#ecfdf5',
+  borderRadius: '999px',
+  padding: '6px 10px'
+};
+
+const liveDotStyle = {
+  width: '8px',
+  height: '8px',
+  borderRadius: '50%',
+  background: '#22c55e'
+};
+
+const reportListItemStyle = (active) => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '12px',
   padding: '12px',
-  borderRadius: '14px'
+  borderRadius: '18px',
+  background: active ? 'linear-gradient(135deg, #eff6ff 0%, #f8fbff 100%)' : '#ffffff',
+  border: active ? '1px solid #bfdbfe' : '1px solid #e2e8f0',
+  textAlign: 'left',
+  boxShadow: active ? '0 12px 24px rgba(37, 99, 235, 0.08)' : 'none',
+  width: '100%',
+  boxSizing: 'border-box',
+  minWidth: 0
+});
+
+const reportTitleStyle = {
+  fontSize: '13px',
+  fontWeight: 800,
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis'
+};
+
+const reportSubtitleStyle = {
+  fontSize: '12px',
+  color: 'var(--text-muted)',
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis'
+};
+
+const reportScoreChipStyle = (color) => ({
+  minWidth: '38px',
+  height: '38px',
+  borderRadius: '12px',
+  background: `${color}18`,
+  color,
+  fontSize: '13px',
+  fontWeight: 800,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexShrink: 0
+});
+
+const emptySidebarStateStyle = {
+  padding: '18px 14px',
+  borderRadius: '18px',
+  background: 'rgba(255,255,255,0.72)',
+  border: '1px dashed #cbd5e1',
+  color: '#64748b',
+  fontSize: '13px',
+  lineHeight: 1.6
+};
+
+const detailPanelStyle = (isTablet, isMobile) => ({
+  position: 'absolute',
+  top: isMobile ? 'auto' : isTablet ? '24px' : '40px',
+  right: isMobile ? '16px' : isTablet ? '24px' : '40px',
+  bottom: isMobile ? '16px' : '24px',
+  left: isMobile ? '16px' : 'auto',
+  width: isMobile ? 'auto' : isTablet ? '280px' : 'min(430px, calc(100% - 40px))',
+  maxHeight: isMobile ? '40%' : 'calc(100% - 48px)',
+  zIndex: 1000,
+  padding: 0,
+  overflow: 'auto',
+  borderRadius: isMobile ? '24px' : '32px',
+  border: '1px solid rgba(255,255,255,0.58)',
+  background: 'rgba(255,255,255,0.62)',
+  backdropFilter: 'blur(40px)',
+  WebkitBackdropFilter: 'blur(40px)',
+  boxShadow: '0 28px 60px rgba(23, 43, 77, 0.22)'
+});
+
+const referenceChipStyle = {
+  fontSize: '11px',
+  fontWeight: 800,
+  color: '#991b1b',
+  background: '#fee2e2',
+  padding: '6px 11px',
+  borderRadius: '999px',
+  letterSpacing: '1px'
+};
+
+const closeButtonStyle = {
+  background: 'rgba(255,255,255,0.72)',
+  border: '1px solid rgba(226,232,240,0.9)',
+  borderRadius: '50%',
+  width: '36px',
+  height: '36px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  cursor: 'pointer'
+};
+
+const detailMetaRowStyle = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: '10px',
+  marginBottom: '16px'
+};
+
+const detailMetaChipStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '8px',
+  padding: '8px 12px',
+  borderRadius: '999px',
+  background: 'rgba(248,250,252,0.92)',
+  border: '1px solid #e2e8f0',
+  color: '#475569',
+  fontSize: '12px',
+  fontWeight: 700
+};
+
+const detailBoxStyle = {
+  background: 'rgba(248,250,252,0.95)',
+  padding: '14px 16px',
+  borderRadius: '16px'
 };
 
 const detailLabelStyle = {
@@ -421,22 +812,19 @@ const detailLabelStyle = {
   textTransform: 'uppercase'
 };
 
-const sidebarHeadingStyle = {
-  fontSize: '12px',
-  fontWeight: 800,
-  textTransform: 'uppercase',
-  color: 'var(--text-muted)',
-  letterSpacing: '1px'
-};
-
-const assetRowStyle = {
-  display: 'flex',
-  alignItems: 'center',
+const detailStatsGridStyle = (isMobile) => ({
+  display: 'grid',
+  gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))',
   gap: '12px',
-  padding: '14px 16px',
-  borderRadius: '14px',
-  border: '1px solid var(--border)',
-  background: 'white'
+  marginBottom: '20px'
+});
+
+const aiPanelStyle = {
+  background: '#f0f9ff',
+  border: '1px solid #bae6fd',
+  borderRadius: '16px',
+  padding: '16px',
+  marginBottom: '24px'
 };
 
 const emptyImageStyle = {

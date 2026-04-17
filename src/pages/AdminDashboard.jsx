@@ -15,9 +15,14 @@ import {
   FlaskConical,
   Sparkles,
   ScanSearch,
-  Trash2
+  Trash2,
+  Inbox,
+  Clock3,
+  CheckCircle2,
+  Building2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
 import { processReport } from '../services/dataSyncService';
 import { verifyImageAuthenticity } from '../services/aiValidationService';
 import { MapContainer, TileLayer, Marker, ZoomControl } from 'react-leaflet';
@@ -44,11 +49,46 @@ const formatTimestamp = (value) => {
 const AdminDashboard = () => {
   const [reports, setReports] = useState([]);
   const [suggestions, setSuggestions] = useState([]);
-  const [selectedId, setSelectedId] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedId = searchParams.get('id');
+  const selectedContactId = searchParams.get('contactId');
+
+  const setSelectedId = (id) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (id) newParams.set('id', id);
+    else newParams.delete('id');
+    setSearchParams(newParams);
+  };
+
+  const setSelectedContactId = (id) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (id) newParams.set('contactId', id);
+    else newParams.delete('contactId');
+    setSearchParams(newParams);
+  };
+
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('reported');
   const [validatingId, setValidatingId] = useState(null);
+  const [contacts, setContacts] = useState([]);
+  const [activeTab, setActiveTab] = useState('incidents');
   const validationQueueRef = useRef(new Set());
+
+  // Animation variants for staggered list entry
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.05
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, x: -10 },
+    show: { opacity: 1, x: 0 }
+  };
 
   useEffect(() => {
     const qReports = query(collection(db, 'reports'), orderBy('createdAt', 'desc'));
@@ -57,27 +97,32 @@ const AdminDashboard = () => {
       setReports(data);
     });
 
-    const qSuggestions = query(collection(db, 'suggestions'), orderBy('createdAt', 'desc'), limit(5));
-    const unsubscribeSuggestions = onSnapshot(qSuggestions, (snapshot) => {
-      const data = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
-      setSuggestions(data);
+    const unsubSuggestions = onSnapshot(collection(db, 'suggestions'), (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setSuggestions(data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)).slice(0, 3));
+    });
+
+    const unsubInquiries = onSnapshot(collection(db, 'contacts'), (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setContacts(data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)).slice(0, 3));
     });
 
     return () => {
       unsubscribeReports();
-      unsubscribeSuggestions();
+      unsubSuggestions();
+      unsubInquiries();
     };
   }, []);
 
   useEffect(() => {
-    if (!reports.length) {
-      setSelectedId(null);
-      return;
-    }
+    if (!reports.length) return;
 
     const hasSelectedReport = reports.some((report) => report.id === selectedId);
     if (!selectedId || !hasSelectedReport) {
-      setSelectedId(reports[0].id);
+      // Only update if current ID is actually different or missing
+      if (selectedId !== reports[0].id) {
+        setSelectedId(reports[0].id);
+      }
     }
   }, [reports, selectedId]);
 
@@ -102,6 +147,21 @@ const AdminDashboard = () => {
     });
   }, [filter, reports, searchTerm]);
 
+  const filteredContacts = useMemo(() => {
+    const searchValue = searchTerm.trim().toLowerCase();
+    return contacts.filter(c =>
+      !searchValue ||
+      c.name?.toLowerCase().includes(searchValue) ||
+      c.email?.toLowerCase().includes(searchValue) ||
+      c.message?.toLowerCase().includes(searchValue)
+    );
+  }, [contacts, searchTerm]);
+
+  const selectedContact = useMemo(
+    () => contacts.find(c => c.id === selectedContactId) || null,
+    [contacts, selectedContactId]
+  );
+
   const runAutoValidation = async (report) => {
     const hasFinalVerification = report?.aiVerification && report.aiVerification.status !== 'ERROR';
 
@@ -124,20 +184,18 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error('AI Validation Error:', error);
     } finally {
+      setValidatingId(null);
       validationQueueRef.current.delete(report.id);
-      setValidatingId((current) => (current === report.id ? null : current));
     }
   };
 
-  useEffect(() => {
-    const hasFinalVerification = selectedReport?.aiVerification && selectedReport.aiVerification.status !== 'ERROR';
-
-    if (!selectedReport?.imageUrl || hasFinalVerification) {
-      return;
+  const handleResolve = async (id) => {
+    try {
+      await updateDoc(doc(db, 'reports', id), { status: 'resolved' });
+    } catch (err) {
+      console.error(err);
     }
-
-    runAutoValidation(selectedReport);
-  }, [selectedReport]);
+  };
 
   const handleApprove = async (id) => {
     try {
@@ -221,67 +279,165 @@ const AdminDashboard = () => {
     <div style={containerStyle}>
       <aside style={masterPaneStyle}>
         <div style={paneHeaderStyle}>
+          <div style={{ display: 'flex', gap: '20px', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+            <button
+              onClick={() => setActiveTab('incidents')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: activeTab === 'incidents' ? '#2563eb' : '#94a3b8',
+                fontWeight: 800,
+                fontSize: '12px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              <Activity size={16} /> Incidents
+            </button>
+            <button
+              onClick={() => setActiveTab('contacts')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: activeTab === 'contacts' ? '#2563eb' : '#94a3b8',
+                fontWeight: 800,
+                fontSize: '12px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              <Inbox size={16} /> Inquiries
+              {contacts.filter(c => c.status === 'unread').length > 0 && (
+                <span style={{ width: '6px', height: '6px', background: '#dc2626', borderRadius: '50%' }} />
+              )}
+            </button>
+          </div>
+
           <div style={sectionHeaderStyle}>
-            <Activity size={18} color="#0f766e" />
-            <span style={terminalLabelStyle}>Incident Queue</span>
+            <span style={terminalLabelStyle}>{activeTab === 'incidents' ? 'Incident Queue' : 'Citizen Inquiries'}</span>
           </div>
 
           <div style={{ position: 'relative' }}>
             <Search size={16} style={searchIconStyle} />
             <input
               style={searchInputStyle}
-              placeholder="Search reports, areas, or issue details"
+              placeholder={activeTab === 'incidents' ? "Search reports, areas..." : "Search inquiries, names..."}
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
             />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '4px'
+                }}
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
 
-          <div style={filterScrollStyle}>
-            <FilterChip active={filter === 'reported'} onClick={() => setFilter('reported')} label="Pending" />
-            <FilterChip active={filter === 'approved'} onClick={() => setFilter('approved')} label="Approved" />
-            <FilterChip active={filter === 'all'} onClick={() => setFilter('all')} label="All history" />
-          </div>
+          {activeTab === 'incidents' && (
+            <div style={filterScrollStyle}>
+              <FilterChip active={filter === 'reported'} onClick={() => setFilter('reported')} label="Pending" />
+              <FilterChip active={filter === 'approved'} onClick={() => setFilter('approved')} label="Approved" />
+              <FilterChip active={filter === 'all'} onClick={() => setFilter('all')} label="All history" />
+            </div>
+          )}
         </div>
 
         <div style={listScrollStyle}>
-          {filteredReports.map((report) => (
-            <button
-              key={report.id}
-              onClick={() => setSelectedId(report.id)}
-              style={reportItemStyle(selectedId === report.id)}
-            >
-              <div style={reportTopRowStyle}>
-                {report.imageUrl ? (
-                  <img src={report.imageUrl} alt={report.type} style={reportThumbStyle} />
-                ) : (
-                  <div style={emptyThumbStyle}>
-                    <ImageIcon size={18} />
-                  </div>
-                )}
+          <AnimatePresence mode="popLayout">
+            {activeTab === 'incidents' ? (
+              <motion.div
+                key={`list-incidents-${filter}`}
+                variants={containerVariants}
+                initial="hidden"
+                animate="show"
+              >
+                {filteredReports.map((report) => (
+                  <motion.button
+                    key={report.id}
+                    variants={itemVariants}
+                    onClick={() => setSelectedId(report.id)}
+                    style={reportItemStyle(selectedId === report.id)}
+                  >
+                    <div style={reportTopRowStyle}>
+                      {report.imageUrl ? (
+                        <img src={report.imageUrl} alt={report.type} style={reportThumbStyle} />
+                      ) : (
+                        <div style={emptyThumbStyle}>
+                          <ImageIcon size={18} />
+                        </div>
+                      )}
 
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={reportHeadlineRowStyle}>
-                    <span style={reportTypeStyle}>{report.type || 'Uncategorized report'}</span>
-                    <span style={reportIdStyle}>#{report.id.substring(0, 6)}</span>
-                  </div>
-                  <div style={reportMetaStyle}>
-                    <MapPin size={12} />
-                    <span>{report.displayAddress}</span>
-                  </div>
-                </div>
-              </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={reportHeadlineRowStyle}>
+                          <span style={reportTypeStyle}>{report.type || 'Uncategorized report'}</span>
+                          <span style={reportIdStyle}>#{report.id.substring(0, 6)}</span>
+                        </div>
+                        <div style={reportMetaStyle}>
+                          <MapPin size={12} />
+                          <span>{report.displayAddress}</span>
+                        </div>
+                      </div>
+                    </div>
 
-              <div style={reportFooterStyle}>
-                <span style={scorePill(report.score)}>{report.score} risk</span>
-                <span style={statusPill(report.status)}>{report.status}</span>
-              </div>
-            </button>
-          ))}
+                    <div style={reportFooterStyle}>
+                      <span style={scorePill(report.score)}>{report.score} risk</span>
+                      <span style={statusPill(report.status)}>{report.status}</span>
+                    </div>
+                  </motion.button>
+                ))}
+              </motion.div>
+            ) : (
+              <motion.div
+                key="list-contacts"
+                variants={containerVariants}
+                initial="hidden"
+                animate="show"
+              >
+                {filteredContacts.map((contact) => (
+                  <motion.button
+                    key={contact.id}
+                    variants={itemVariants}
+                    onClick={() => setSelectedContactId(contact.id)}
+                    style={reportItemStyle(selectedContactId === contact.id)}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span style={{ fontWeight: 800, fontSize: '14px', color: '#0f172a' }}>{contact.name}</span>
+                      <span style={{ fontSize: '10px', color: '#64748b' }}>{formatTimestamp(contact.createdAt)}</span>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#475569', marginBottom: '4px' }}>{contact.email}</div>
+                    <div style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>{contact.department || 'General Inquiry'}</div>
+                  </motion.button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          {!filteredReports.length && (
+          {((activeTab === 'incidents' && !filteredReports.length) || (activeTab === 'contacts' && !filteredContacts.length)) && (
             <div style={emptyListStyle}>
               <Search size={20} color="#94a3b8" />
-              <p>No reports match this filter.</p>
+              <p>No matches found.</p>
             </div>
           )}
         </div>
@@ -289,212 +445,274 @@ const AdminDashboard = () => {
 
       <section style={detailPaneStyle}>
         <AnimatePresence mode="wait">
-          {selectedReport ? (
-            <motion.div
-              key={selectedReport.id}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.2 }}
-              style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
-            >
-              <div style={detailHeaderStyle}>
-                <div>
-                  <div style={liveRowStyle}>
-                    <div style={livePulse} />
-                    <span style={liveLabelStyle}>Live inspection</span>
+          {activeTab === 'incidents' ? (
+            selectedReport ? (
+              <motion.div
+                key={selectedReport.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.2 }}
+                style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+              >
+                <div style={detailHeaderStyle}>
+                  <div>
+                    <div style={liveRowStyle}>
+                      <div style={livePulse} />
+                      <span style={liveLabelStyle}>Live inspection</span>
+                    </div>
+                    <h1 style={detailTitleStyle}>{selectedReport.type || 'Incident report'}</h1>
+                    <p style={detailSubtitleStyle}>{selectedReport.displayAddress}</p>
                   </div>
-                  <h1 style={detailTitleStyle}>{selectedReport.type || 'Incident report'}</h1>
-                  <p style={detailSubtitleStyle}>{selectedReport.displayAddress}</p>
-                </div>
 
-                <div style={actionGroupStyle}>
-                  {selectedReport.status === 'reported' ? (
-                    <>
-                      <button onClick={() => handleApprove(selectedReport.id)} style={approveBtnStyle}>
-                        <Check size={18} /> Approve report
+                  <div style={actionGroupStyle}>
+                    {selectedReport.status === 'reported' ? (
+                      <>
+                        <button onClick={() => handleApprove(selectedReport.id)} style={approveBtnStyle}>
+                          <Check size={18} /> Approve report
+                        </button>
+                        <button onClick={() => handleReject(selectedReport.id)} style={rejectBtnStyle}>
+                          <X size={18} /> Reject report
+                        </button>
+                      </>
+                    ) : selectedReport.status === 'approved' ? (
+                      <button onClick={() => handleResolve(selectedReport.id)} style={{ ...approveBtnStyle, background: '#10b981', boxShadow: '0 12px 24px rgba(16, 185, 129, 0.2)' }}>
+                        <CheckCircle2 size={18} /> Mark as Resolved
                       </button>
-                      <button onClick={() => handleReject(selectedReport.id)} style={rejectBtnStyle}>
-                        <X size={18} /> Reject report
-                      </button>
-                    </>
-                  ) : (
-                    <div style={finalStatusPill(selectedReport.status)}>{selectedReport.status}</div>
-                  )}
-                  <button onClick={() => handleDelete(selectedReport)} style={deleteBtnStyle}>
-                    <Trash2 size={18} /> Delete report
-                  </button>
-                </div>
-              </div>
-
-              {suggestions.length > 0 && (
-                <div style={suggestionHighlightBoxStyle}>
-                  <div style={sectionHeaderStyle}>
-                    <MessageSquare size={16} color="#2563eb" />
-                    <span style={{ ...terminalLabelStyle, color: '#2563eb' }}>Public improvement feed</span>
-                  </div>
-                  <div style={suggestionTextStyle}>
-                    "{suggestions[0].text}" <span style={suggestionAuthorStyle}>by {suggestions[0].userEmail || 'Anonymous'}</span>
-                  </div>
-                </div>
-              )}
-
-              <div style={detailContentScroll}>
-                <div style={heroGridStyle}>
-                  <div style={heroImageCardStyle}>
-                    {selectedReport.imageUrl ? (
-                      <img src={selectedReport.imageUrl} alt="Uploaded report evidence" style={heroImageStyle} />
                     ) : (
-                      <div style={imageFallbackStyle}>
-                        <ImageIcon size={34} />
-                        <p>No image uploaded for this report.</p>
-                      </div>
+                      <div style={finalStatusPill(selectedReport.status)}>{selectedReport.status}</div>
                     )}
-                    <div style={heroBadgeStyle}>Citizen upload</div>
-                  </div>
-
-                  <div style={heroSummaryCardStyle}>
-                    <div style={summaryBadgeStyle(verificationTone)}>
-                      <Sparkles size={14} />
-                      {selectedReport.imageUrl
-                        ? isValidatingSelected
-                          ? 'AI review in progress'
-                          : verificationSummaryLabel
-                        : 'No image available'}
-                    </div>
-                    <div style={summaryMetricsGrid}>
-                      <StatCard label="Priority score" value={selectedReport.score} tone={selectedReport.score > 70 ? dangerTone : positiveTone} />
-                      <StatCard
-                        label="Confidence"
-                        value={verificationScoreLabel}
-                        tone={verificationTone}
-                      />
-                      <StatCard label="Estimated time" value={selectedReport.aiData?.timeToRepair || 'N/A'} tone={neutralTone} />
-                      <StatCard label="Resource level" value={selectedReport.aiData?.riskLevel || 'Standard'} tone={neutralTone} />
-                    </div>
+                    <button onClick={() => handleDelete(selectedReport)} style={deleteBtnStyle}>
+                      <Trash2 size={18} /> Delete report
+                    </button>
                   </div>
                 </div>
 
-                <div style={detailGrid}>
-                  <div style={leftColumnStyle}>
-                    <div style={cardStyle}>
-                      <div style={cardHeaderRowStyle}>
-                        <h3 style={cardTitleStyle}>
-                          <FlaskConical size={16} />
-                          Image verification
-                        </h3>
-                        <span style={summaryBadgeStyle(verificationTone)}>
-                          {selectedReport.imageUrl
-                            ? isValidatingSelected
-                              ? 'Scanning evidence'
-                              : verificationBadgeLabel
-                            : 'Unavailable'}
-                        </span>
-                      </div>
 
+
+                <div style={detailContentScroll}>
+                  <div style={heroGridStyle}>
+                    <div style={heroImageCardStyle}>
                       {selectedReport.imageUrl ? (
-                        <div style={{ display: 'grid', gap: '18px' }}>
-                          <img src={selectedReport.imageUrl} alt="Uploaded evidence preview" style={verificationImageStyle} />
-
-                          {selectedReport.aiVerification ? (
-                            <>
-                              <div style={diagnosticGrid}>
-                                <DiagItem label="Veracity score" value={verificationScoreLabel} color={verificationTone.text} />
-                                <DiagItem
-                                  label="Integrity check"
-                                  value={verificationIntegrityLabel}
-                                  color={verificationTone.text}
-                                />
-                              </div>
-
-                              <div>
-                                <span style={subtleLabelStyle}>AI notes</span>
-                                <p style={descText}>{selectedReport.aiVerification.breakdown || 'No explanation returned by the model.'}</p>
-                              </div>
-
-                              <div>
-                                <span style={subtleLabelStyle}>Detected anomalies</span>
-                                <div style={pillWrapStyle}>
-                                  {(selectedReport.aiVerification.anomalies?.length
-                                    ? selectedReport.aiVerification.anomalies
-                                    : ['No major anomalies detected']
-                                  ).map((item, index) => (
-                                    <span key={`${item}-${index}`} style={anomalyPillStyle(item === 'No major anomalies detected')}>
-                                      {item}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            </>
-                          ) : (
-                            <div style={pendingPanelStyle}>
-                              <ScanSearch size={18} color="#0f766e" />
-                              <div>
-                                <strong style={{ color: '#0f172a', display: 'block', marginBottom: '4px' }}>Automatic validation is running</strong>
-                                <span style={{ color: '#64748b', fontSize: '13px' }}>
-                                  The uploaded image is being checked in the background as soon as the report is opened.
-                                </span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                        <img src={selectedReport.imageUrl} alt="Uploaded report evidence" style={heroImageStyle} />
                       ) : (
-                        <div style={noAiStateStyle}>
-                          <ImageIcon size={32} color="#94a3b8" />
-                          <p>This report does not include an uploaded image.</p>
+                        <div style={imageFallbackStyle}>
+                          <ImageIcon size={34} />
+                          <p>No image uploaded for this report.</p>
                         </div>
                       )}
+                      <div style={heroBadgeStyle}>Citizen upload</div>
                     </div>
 
-                    <div style={cardStyle}>
-                      <h3 style={cardTitleStyle}>
-                        <Cpu size={16} />
-                        Report analysis
-                      </h3>
-                      <div style={diagnosticGrid}>
-                        <DiagItem label="Priority score" value={selectedReport.score} color={selectedReport.score > 70 ? '#dc2626' : '#0f766e'} />
-                        <DiagItem label="Confidence level" value={verificationScoreLabel} />
-                        <DiagItem label="Est. completion" value={selectedReport.aiData?.timeToRepair || 'N/A'} />
-                        <DiagItem label="Resource req." value={selectedReport.aiData?.riskLevel || 'Standard'} />
+                    <div style={heroSummaryCardStyle}>
+                      <div style={summaryBadgeStyle(verificationTone)}>
+                        <Sparkles size={14} />
+                        {selectedReport.imageUrl
+                          ? isValidatingSelected
+                            ? 'AI review in progress'
+                            : verificationSummaryLabel
+                          : 'No image available'}
                       </div>
-                    </div>
-
-                    <div style={cardStyle}>
-                      <h3 style={cardTitleStyle}>
-                        <Shield size={16} />
-                        Citizen metadata
-                      </h3>
-                      <div style={metaStackStyle}>
-                        <MetaRow label="User ID" value={selectedReport.userId ? `${selectedReport.userId.substring(0, 12)}...` : 'Unknown'} />
-                        <MetaRow label="Timestamp" value={formatTimestamp(selectedReport.createdAt)} />
-                        <MetaRow label="Description" value={selectedReport.description || 'No additional context provided by the citizen.'} multiline />
+                      <div style={summaryMetricsGrid}>
+                        <StatCard label="Priority score" value={selectedReport.score} tone={selectedReport.score > 70 ? dangerTone : positiveTone} />
+                        <StatCard
+                          label="Confidence"
+                          value={verificationScoreLabel}
+                          tone={verificationTone}
+                        />
+                        <StatCard label="Estimated time" value={selectedReport.aiData?.timeToRepair || 'N/A'} tone={neutralTone} />
+                        <StatCard label="Resource level" value={selectedReport.aiData?.riskLevel || 'Standard'} tone={neutralTone} />
                       </div>
                     </div>
                   </div>
 
-                  <div style={mapCardStyle}>
-                    <MapContainer
-                      center={[selectedReport.location?.lat || 19.076, selectedReport.location?.lng || 72.8777]}
-                      zoom={15}
-                      style={{ height: '100%', width: '100%', borderRadius: '22px' }}
-                      zoomControl={false}
-                    >
-                      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                      <Marker
-                        position={[selectedReport.location?.lat || 19.076, selectedReport.location?.lng || 72.8777]}
-                        icon={defaultIcon}
-                      />
-                      <ZoomControl position="bottomright" />
-                    </MapContainer>
+                  <div style={detailGrid}>
+                    <div style={leftColumnStyle}>
+                      <div style={cardStyle}>
+                        <div style={cardHeaderRowStyle}>
+                          <h3 style={cardTitleStyle}>
+                            <FlaskConical size={16} />
+                            Image verification
+                          </h3>
+                          <span style={summaryBadgeStyle(verificationTone)}>
+                            {selectedReport.imageUrl
+                              ? isValidatingSelected
+                                ? 'Scanning evidence'
+                                : verificationBadgeLabel
+                              : 'Unavailable'}
+                          </span>
+                        </div>
+
+                        {selectedReport.imageUrl ? (
+                          <div style={{ display: 'grid', gap: '18px' }}>
+                            <img src={selectedReport.imageUrl} alt="Uploaded evidence preview" style={verificationImageStyle} />
+
+                            {selectedReport.aiVerification ? (
+                              <>
+                                <div style={diagnosticGrid}>
+                                  <DiagItem label="Veracity score" value={verificationScoreLabel} color={verificationTone.text} />
+                                  <DiagItem
+                                    label="Integrity check"
+                                    value={verificationIntegrityLabel}
+                                    color={verificationTone.text}
+                                  />
+                                </div>
+
+                                <div>
+                                  <span style={subtleLabelStyle}>AI notes</span>
+                                  <p style={descText}>{selectedReport.aiVerification.breakdown || 'No explanation returned by the model.'}</p>
+                                </div>
+
+                                <div>
+                                  <span style={subtleLabelStyle}>Detected anomalies</span>
+                                  <div style={pillWrapStyle}>
+                                    {(selectedReport.aiVerification.anomalies?.length
+                                      ? selectedReport.aiVerification.anomalies
+                                      : ['No major anomalies detected']
+                                    ).map((item, index) => (
+                                      <span key={`${item}-${index}`} style={anomalyPillStyle(item === 'No major anomalies detected')}>
+                                        {item}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              </>
+                            ) : (
+                              <div style={pendingPanelStyle}>
+                                <ScanSearch size={18} color="#0f766e" />
+                                <div>
+                                  <strong style={{ color: '#0f172a', display: 'block', marginBottom: '4px' }}>Automatic validation is running</strong>
+                                  <span style={{ color: '#64748b', fontSize: '13px' }}>
+                                    The uploaded image is being checked in the background as soon as the report is opened.
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div style={noAiStateStyle}>
+                            <ImageIcon size={32} color="#94a3b8" />
+                            <p>This report does not include an uploaded image.</p>
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={cardStyle}>
+                        <h3 style={cardTitleStyle}>
+                          <Cpu size={16} />
+                          Report analysis
+                        </h3>
+                        <div style={diagnosticGrid}>
+                          <DiagItem label="Priority score" value={selectedReport.score} color={selectedReport.score > 70 ? '#dc2626' : '#0f766e'} />
+                          <DiagItem label="Confidence level" value={verificationScoreLabel} />
+                          <DiagItem label="Est. completion" value={selectedReport.aiData?.timeToRepair || 'N/A'} />
+                          <DiagItem label="Resource req." value={selectedReport.aiData?.riskLevel || 'Standard'} />
+                        </div>
+                      </div>
+
+                      <div style={cardStyle}>
+                        <h3 style={cardTitleStyle}>
+                          <Shield size={16} />
+                          Citizen metadata
+                        </h3>
+                        <div style={metaStackStyle}>
+                          <MetaRow label="User ID" value={selectedReport.userId ? `${selectedReport.userId.substring(0, 12)}...` : 'Unknown'} />
+                          <MetaRow label="Timestamp" value={formatTimestamp(selectedReport.createdAt)} />
+                          <MetaRow label="Description" value={selectedReport.description || 'No additional context provided by the citizen.'} multiline />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={mapCardStyle}>
+                      <MapContainer
+                        center={[selectedReport.location?.lat || 19.076, selectedReport.location?.lng || 72.8777]}
+                        zoom={15}
+                        style={{ height: '100%', width: '100%', borderRadius: '22px' }}
+                        zoomControl={false}
+                      >
+                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                        <Marker
+                          position={[selectedReport.location?.lat || 19.076, selectedReport.location?.lng || 72.8777]}
+                          icon={defaultIcon}
+                        />
+                        <ZoomControl position="bottomright" />
+                      </MapContainer>
+                    </div>
                   </div>
                 </div>
+              </motion.div>
+            ) : (
+              <div style={noSelectionStyle}>
+                <Navigation size={48} color="#94a3b8" />
+                <p style={{ color: '#64748b', fontWeight: 600, marginTop: '16px' }}>Select a report to review its details.</p>
               </div>
-            </motion.div>
+            )
           ) : (
-            <div style={noSelectionStyle}>
-              <Navigation size={48} color="#94a3b8" />
-              <p style={{ color: '#64748b', fontWeight: 600, marginTop: '16px' }}>Select a report to review its details.</p>
-            </div>
+            selectedContact ? (
+              <motion.div
+                key={`contact-${selectedContact.id}`}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+              >
+                <div style={detailHeaderStyle}>
+                  <div>
+                    <div style={liveRowStyle}>
+                      <span style={{ ...liveLabelStyle, color: '#2563eb' }}>Official Inquiry</span>
+                    </div>
+                    <h1 style={detailTitleStyle}>{selectedContact.name}</h1>
+                    <p style={detailSubtitleStyle}>{selectedContact.email}</p>
+                  </div>
+                  <div style={actionGroupStyle}>
+                    <div style={{ ...finalStatusPill(selectedContact.status), background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }}>
+                      {selectedContact.status}
+                    </div>
+                    <button
+                      onClick={async () => {
+                        await updateDoc(doc(db, 'contacts', selectedContact.id), { status: 'replied' });
+                      }}
+                      style={approveBtnStyle}
+                    >
+                      Mark as Replied
+                    </button>
+                  </div>
+                </div>
+
+                <div style={detailContentScroll}>
+                  <div style={{ display: 'grid', gap: '24px' }}>
+                    <div style={cardStyle}>
+                      <h3 style={cardTitleStyle}><MessageSquare size={16} /> Inquiry Content</h3>
+                      <div style={{ background: '#f8fafc', padding: '32px', borderRadius: '18px', marginTop: '16px', border: '1px solid #e2e8f0', lineHeight: 1.8, fontSize: '16px', color: '#0f172a' }}>
+                        {selectedContact.message}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                      <div style={cardStyle}>
+                        <h3 style={cardTitleStyle}><Building2 size={16} /> Origin</h3>
+                        <div style={{ marginTop: '12px' }}>
+                          <div style={subtleLabelStyle}>Department/Organization</div>
+                          <div style={{ fontSize: '18px', fontWeight: 700, marginTop: '4px' }}>{selectedContact.department || 'N/A'}</div>
+                        </div>
+                      </div>
+                      <div style={cardStyle}>
+                        <h3 style={cardTitleStyle}><Clock3 size={16} /> Receipt</h3>
+                        <div style={{ marginTop: '12px' }}>
+                          <div style={subtleLabelStyle}>Submitted On</div>
+                          <div style={{ fontSize: '18px', fontWeight: 700, marginTop: '4px' }}>{formatTimestamp(selectedContact.createdAt)}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ) : (
+              <div style={noSelectionStyle}>
+                <Inbox size={48} color="#94a3b8" />
+                <p style={{ color: '#64748b', fontWeight: 600, marginTop: '16px' }}>Select an inquiry to read the message.</p>
+              </div>
+            )
           )}
         </AnimatePresence>
       </section>
@@ -555,11 +773,11 @@ const containerStyle = {
 
 const masterPaneStyle = {
   width: '360px',
-  borderRight: '1px solid #dbe4f0',
+  borderRight: '1px solid rgba(255, 255, 255, 0.3)',
   display: 'flex',
   flexDirection: 'column',
-  background: 'rgba(255, 255, 255, 0.86)',
-  backdropFilter: 'blur(18px)'
+  background: 'rgba(255, 255, 255, 0.4)',
+  backdropFilter: 'blur(28px)'
 };
 
 const paneHeaderStyle = {
@@ -791,16 +1009,16 @@ const actionGroupStyle = {
 };
 
 const approveBtnStyle = {
-  padding: '12px 20px',
-  background: '#0f766e',
+  padding: '12px 24px',
+  background: '#0052cc',
   color: '#ffffff',
-  borderRadius: '14px',
+  borderRadius: '16px',
   fontSize: '14px',
   fontWeight: 700,
   display: 'flex',
   alignItems: 'center',
   gap: '10px',
-  boxShadow: '0 12px 24px rgba(15, 118, 110, 0.2)'
+  boxShadow: '0 12px 24px rgba(0, 82, 204, 0.2)'
 };
 
 const rejectBtnStyle = {
@@ -970,9 +1188,10 @@ const leftColumnStyle = {
 const cardStyle = {
   padding: '24px',
   borderRadius: '24px',
-  background: '#ffffff',
-  border: '1px solid #dbe4f0',
-  boxShadow: '0 16px 32px rgba(15, 23, 42, 0.06)'
+  background: 'rgba(255, 255, 255, 0.5)',
+  backdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255, 255, 255, 0.5)',
+  boxShadow: '0 16px 32px rgba(15, 23, 42, 0.04)'
 };
 
 const cardHeaderRowStyle = {

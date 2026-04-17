@@ -6,23 +6,25 @@ import { useAuth } from '../context/AuthContext';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { 
-  TrendingUp, 
-  Shield, 
-  CheckCircle, 
+import {
+  TrendingUp,
+  Shield,
+  CheckCircle,
   AlertTriangle,
   Map as MapIcon,
   ChevronRight,
   MessageSquare,
   Send
 } from 'lucide-react';
-import { 
-  Chart as ChartJS, 
-  CategoryScale, 
-  LinearScale, 
-  BarElement, 
-  Title, 
-  Tooltip, 
+import { motion } from 'framer-motion';
+import ScrollReveal from '../components/ScrollReveal';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
   Legend,
   ArcElement
 } from 'chart.js';
@@ -78,10 +80,10 @@ const Dashboard = () => {
 
     // 2. Subscribe to global stats
     const unsubscribeStats = subscribeToStats((data) => {
-      const resolvedPct = data.totalReports > 0 
-        ? Math.round((data.resolvedCount / data.totalReports) * 100) 
+      const resolvedPct = data.totalReports > 0
+        ? Math.round((data.resolvedCount / data.totalReports) * 100)
         : 0;
-        
+
       setStats({
         total: data.totalReports,
         high: data.highRiskCount,
@@ -110,7 +112,7 @@ const Dashboard = () => {
       else if (r.score > 40) counts.watch++;
       else counts.safe++;
     });
-    
+
     // Default to placeholders if no data, but label as 'No Data'
     const total = reports.length || 1;
     return [
@@ -139,36 +141,45 @@ const Dashboard = () => {
   return (
     <div style={{ background: '#F8F9FB', minHeight: '100vh', paddingTop: 'var(--nav-height)' }}>
       <div className="container" style={{ padding: '60px 0' }}>
-        <header style={{ marginBottom: '60px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-          <div>
-            <h1 style={{ fontSize: '48px', marginBottom: '8px', letterSpacing: '-1px' }}>Fleet Command</h1>
-            <p style={{ fontSize: '18px', color: 'var(--text-muted)' }}>Real-time metropolitan infrastructure overview.</p>
-          </div>
-          <div className="pill pill-blue" style={{ height: 'fit-content' }}>
-            <TrendingUp size={12} /> System Health: {systemHealth}
-          </div>
-        </header>
+        <ScrollReveal direction="up" duration={0.6}>
+          <header style={{ marginBottom: '60px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+            <div>
+              <h1 style={{ fontSize: '48px', marginBottom: '8px', letterSpacing: '-1px' }}> Overview</h1>
+              <p style={{ fontSize: '18px', color: 'var(--text-muted)' }}>Real-time metropolitan infrastructure overview.</p>
+            </div>
+            <div className="pill pill-blue" style={{ height: 'fit-content' }}>
+              <TrendingUp size={12} /> System Health: {systemHealth}
+            </div>
+          </header>
+        </ScrollReveal>
 
         {/* Top Stats Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '60px' }}>
-          <StatBox icon={<Shield color="var(--primary)"/>} label="Total Issues" value={stats.total} bg="#deebff" />
-          <StatBox icon={<AlertTriangle color="var(--critical)"/>} label="High Risk Zones" value={stats.high} bg="#ffebe6" />
-          <StatBox icon={<CheckCircle color="var(--safe)"/>} label="Resolved Issues" value={stats.resolved} bg="#e3fcef" />
+          <ScrollReveal direction="up" delay={0.1}>
+            <StatBox icon={<Shield color="var(--primary)" />} label="Total Issues" value={stats.total} bg="#deebff" />
+          </ScrollReveal>
+          <ScrollReveal direction="up" delay={0.2}>
+            <StatBox icon={<AlertTriangle color="var(--critical)" />} label="High Risk Zones" value={stats.high} bg="#ffebe6" />
+          </ScrollReveal>
+          <ScrollReveal direction="up" delay={0.3}>
+            <StatBox icon={<CheckCircle color="var(--safe)" />} label="Resolved Issues" value={stats.resolved} bg="#e3fcef" />
+          </ScrollReveal>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr', gap: '32px' }}>
           {/* Main Map Visualization */}
-          <div className="card" style={{ padding: 0, position: 'relative', overflow: 'hidden', height: '600px', border: '1px solid #e2e8f0' }}>
-             <MapContainer 
-              center={MUMBAI_CENTER} 
-              zoom={11} 
-              style={{ height: '100%', width: '100%', zIndex: 1 }}
-              scrollWheelZoom={false}
-             >
+          <ScrollReveal direction="left" delay={0.4}>
+            <div className="card" style={{ padding: 0, position: 'relative', overflow: 'hidden', height: '600px', border: '1px solid #e2e8f0' }}>
+              <MapContainer
+                center={MUMBAI_CENTER}
+                zoom={11}
+                style={{ height: '100%', width: '100%', zIndex: 1 }}
+                scrollWheelZoom={false}
+              >
                 <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
                 {reports.map((report) => (
-                  <Marker 
-                    key={report.id} 
+                  <Marker
+                    key={report.id}
                     position={[report.location?.lat || 19.076, report.location?.lng || 72.8777]}
                     icon={defaultIcon}
                   >
@@ -183,83 +194,70 @@ const Dashboard = () => {
                     </Popup>
                   </Marker>
                 ))}
-             </MapContainer>
-             
-             <div style={{ position:'absolute', bottom:30, left:30, zIndex: 1000, pointerEvents: 'none' }}>
-               <div className="glass" style={{ padding: '20px 24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.4)' }}>
-                  <h2 style={{ fontSize:'24px', marginBottom:'4px', color: '#1e293b' }}>Infrastructure Health Map</h2>
-                  <p style={{ color:'#64748b', fontSize:'14px', margin: 0 }}>Metropolitan grid sensor data and report heatmaps.</p>
-               </div>
-             </div>
-          </div>
+              </MapContainer>
+
+              <div style={{ position: 'absolute', bottom: 30, left: 30, zIndex: 1000, pointerEvents: 'none' }}>
+                <div className="glass" style={{ padding: '20px 24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.4)' }}>
+                  <h2 style={{ fontSize: '24px', marginBottom: '4px', color: '#1e293b' }}>Infrastructure Health Map</h2>
+                  <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>Metropolitan grid sensor data and report heatmaps.</p>
+                </div>
+              </div>
+            </div>
+          </ScrollReveal>
 
           {/* Right Sidebar: Analytics & Lists */}
           <div style={{ display: 'grid', gap: '32px' }}>
-            <div className="card">
-              <h3 style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--primary)', marginBottom: '24px', letterSpacing: '1px' }}>Risk Sentiment</h3>
-              <div style={{ maxWidth: '200px', margin: '0 auto' }}>
-                <Pie data={chartData} options={{ plugins: { legend: { display: false } } }} />
+            <ScrollReveal direction="right" delay={0.5}>
+              <div className="card">
+                <h3 style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--primary)', marginBottom: '24px', letterSpacing: '1px' }}>Risk Sentiment</h3>
+                <div style={{ maxWidth: '200px', margin: '0 auto' }}>
+                  <Pie data={chartData} options={{ plugins: { legend: { display: false } } }} />
+                </div>
+                <div style={{ marginTop: '24px', display: 'grid', gap: '12px' }}>
+                  <LegendRow color="#36B37E" label="Safe Zones" value={`${Math.round(riskDistribution[0])}%`} />
+                  <LegendRow color="#FFAB00" label="Watch Required" value={`${Math.round(riskDistribution[1])}%`} />
+                  <LegendRow color="#FF5630" label="Critical Response" value={`${Math.round(riskDistribution[3])}%`} />
+                </div>
               </div>
-              <div style={{ marginTop: '24px', display: 'grid', gap: '12px' }}>
-                 <LegendRow color="#36B37E" label="Safe Zones" value={`${Math.round(riskDistribution[0])}%`} />
-                 <LegendRow color="#FFAB00" label="Watch Required" value={`${Math.round(riskDistribution[1])}%`} />
-                 <LegendRow color="#FF5630" label="Critical Response" value={`${Math.round(riskDistribution[3])}%`} />
-              </div>
-            </div>
+            </ScrollReveal>
 
             {/* NEW: Suggestion Box */}
-            <div className="card" style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #ffffff 100%)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                <MessageSquare size={18} color="var(--primary)" />
-                <h3 style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--primary)', letterSpacing: '1px' }}>Improve Our City</h3>
+            <ScrollReveal direction="right" delay={0.6}>
+              <div className="card" style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #ffffff 100%)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                  <MessageSquare size={18} color="var(--primary)" />
+                  <h3 style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--primary)', letterSpacing: '1px' }}>Improve Our City</h3>
+                </div>
+                <p style={{ fontSize: '13px', color: '#475569', marginBottom: '16px', lineHeight: 1.5 }}>
+                  Have an idea for a better bridge, safer road, or new infrastructure? Let us know.
+                </p>
+                <textarea
+                  placeholder="e.g. Add reinforced railings to Wadala Bridge..."
+                  value={suggestion}
+                  onChange={(e) => setSuggestion(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '12px',
+                    border: '1px solid #e2e8f0',
+                    fontSize: '14px',
+                    minHeight: '100px',
+                    marginBottom: '12px',
+                    resize: 'none',
+                    outline: 'none',
+                    transition: 'border-color 0.2s'
+                  }}
+                />
+                <button
+                  onClick={handleSuggestionSubmit}
+                  disabled={submittingNote || !suggestion.trim()}
+                  className="btn-primary"
+                  style={{ width: '100%', padding: '12px', borderRadius: '10px', fontSize: '13px', opacity: (submittingNote || !suggestion.trim()) ? 0.6 : 1 }}
+                >
+                  {submittingNote ? 'Submitting...' : <><Send size={14} style={{ marginRight: '6px' }} /> Submit Suggestion</>}
+                </button>
               </div>
-              <p style={{ fontSize: '13px', color: '#475569', marginBottom: '16px', lineHeight: 1.5 }}>
-                Have an idea for a better bridge, safer road, or new infrastructure? Let us know.
-              </p>
-              <textarea 
-                placeholder="e.g. Add reinforced railings to Wadala Bridge..."
-                value={suggestion}
-                onChange={(e) => setSuggestion(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  borderRadius: '12px',
-                  border: '1px solid #e2e8f0',
-                  fontSize: '14px',
-                  minHeight: '100px',
-                  marginBottom: '12px',
-                  resize: 'none',
-                  outline: 'none',
-                  transition: 'border-color 0.2s'
-                }}
-              />
-              <button 
-                onClick={handleSuggestionSubmit}
-                disabled={submittingNote || !suggestion.trim()}
-                className="btn-primary" 
-                style={{ width: '100%', padding: '12px', borderRadius: '10px', fontSize: '13px', opacity: (submittingNote || !suggestion.trim()) ? 0.6 : 1 }}
-              >
-                {submittingNote ? 'Submitting...' : <><Send size={14} style={{ marginRight: '6px' }} /> Submit Suggestion</>}
-              </button>
-            </div>
-
-            <div className="card">
-              <h3 style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--primary)', marginBottom: '24px', letterSpacing: '1px' }}>Priority Queue</h3>
-              <div style={{ display: 'grid', gap: '12px' }}>
-                {reports.slice(0, 4).map(report => (
-                  <div key={report.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'var(--surface)', borderRadius: '8px' }}>
-                    <div>
-                      <div style={{ fontSize: '14px', fontWeight: 700 }}>{report.type}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{report.displayAddress}</div>
-                    </div>
-                    <div style={{ color: report.color, fontWeight: 800 }}>{report.score}</div>
-                  </div>
-                ))}
-              </div>
-              <button style={{ width: '100%', marginTop: '20px', fontSize: '12px', fontWeight: 700, color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                View Full Queue <ChevronRight size={14} />
-              </button>
-            </div>
+            </ScrollReveal>
           </div>
         </div>
       </div>

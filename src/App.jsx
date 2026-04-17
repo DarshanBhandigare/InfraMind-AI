@@ -15,6 +15,8 @@ import Contact from './pages/Contact';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import EscalationHub from './pages/EscalationHub';
+import InquiriesConsole from './pages/InquiriesConsole';
+import ImprovementsConsole from './pages/ImprovementsConsole';
 import DashboardLayout from './components/DashboardLayout';
 
 import { useLocation } from 'react-router-dom';
@@ -103,6 +105,8 @@ function App() {
               
               {/* Admin Only Content */}
               <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+              <Route path="/admin/inquiries" element={<AdminRoute><InquiriesConsole /></AdminRoute>} />
+              <Route path="/admin/improvements" element={<AdminRoute><ImprovementsConsole /></AdminRoute>} />
               
               {/* Fallback */}
               <Route path="*" element={<Navigate to="/" />} />

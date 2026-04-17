@@ -31,9 +31,9 @@
   --command-accent-glow: rgba(16, 185, 129, 0.2);
   
   --nav-height: 80px;
-  --nav-blur: 24px;
-  --glass-bg: rgba(235, 245, 255, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.6);
+  --nav-blur: 32px;
+  --glass-bg: rgba(255, 255, 255, 0.45);
+  --glass-border: rgba(255, 255, 255, 0.5);
 }
 
 * {
@@ -106,13 +106,12 @@ button {
 
 .glass-nav {
   background: var(--glass-bg);
-  backdrop-filter: blur(var(--nav-blur));
-  -webkit-backdrop-filter: blur(var(--nav-blur));
+  backdrop-filter: blur(var(--nav-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--nav-blur)) saturate(180%);
   border: 1px solid var(--glass-border);
   box-shadow: 
-    0 10px 40px rgba(0, 48, 120, 0.12),
-    0 4px 10px rgba(0, 0, 0, 0.05),
-    inset 0 0 20px rgba(255, 255, 255, 0.2);
+    0 8px 32px 0 rgba(31, 38, 135, 0.07),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2);
   border-radius: 24px;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -131,8 +130,8 @@ button {
 
 .nav-item-liquid {
   position: relative;
-  color: var(--text-muted);
-  font-weight: 500;
+  color: #000000;
+  font-weight: 700;
   padding: 8px 16px;
   border-radius: 12px;
   transition: all 0.3s ease;
@@ -157,8 +156,14 @@ button {
   transform: translateX(-50%);
 }
 
-.nav-item-liquid:hover::after {
+.nav-item-liquid:hover::after,
+.nav-item-liquid.active::after {
   width: 20px;
+}
+
+.nav-item-liquid.active {
+  color: var(--primary);
+  background: rgba(0, 82, 204, 0.04);
 }
 
 .btn-liquid {
@@ -166,7 +171,7 @@ button {
   color: white;
   padding: 10px 24px;
   border-radius: 14px;
-  font-weight: 600;
+  font-weight: 700;
   box-shadow: 0 4px 15px rgba(0, 82, 204, 0.2);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }

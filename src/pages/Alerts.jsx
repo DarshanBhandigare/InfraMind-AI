@@ -100,9 +100,9 @@ const Alerts = () => {
     const averageIssueAge =
       allAlerts.length > 0
         ? (
-            allAlerts.reduce((sum, alert) => sum + (Number.isFinite(alert.daysDelayed) ? alert.daysDelayed : 0), 0) /
-            allAlerts.length
-          ).toFixed(1)
+          allAlerts.reduce((sum, alert) => sum + (Number.isFinite(alert.daysDelayed) ? alert.daysDelayed : 0), 0) /
+          allAlerts.length
+        ).toFixed(1)
         : '0.0';
 
     return {
@@ -260,16 +260,6 @@ const Alerts = () => {
               <>
                 <div style={{ fontSize: '12px', fontWeight: 800, letterSpacing: '1.4px', textTransform: 'uppercase', color: '#15803d', marginBottom: '18px' }}>
                   System Status: Active
-                </div>
-                <div style={{ display: 'grid', gap: '14px', color: 'var(--text-muted)', fontSize: '15px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Bell size={18} />
-                    <span>Support</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Clock3 size={18} />
-                    <span>Incident Log</span>
-                  </div>
                 </div>
               </>
             )}
@@ -471,15 +461,6 @@ const AlertsPanel = ({ filter, setFilter, filteredAlerts, overviewStats }) => {
               {option}
             </button>
           ))}
-        </div>
-
-        <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
-          <button style={typeButtonStyle}>
-            All Alert Types <ChevronDown size={16} />
-          </button>
-          <button className="btn-primary" style={{ padding: '16px 22px', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 14px 26px rgba(0, 82, 204, 0.22)' }}>
-            <FilePlus2 size={18} /> New Report
-          </button>
         </div>
       </section>
 

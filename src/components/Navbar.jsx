@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Shield } from 'lucide-react';
 
@@ -64,13 +64,13 @@ const Navbar = () => {
           flex: '1',
           overflow: 'hidden' 
         }}>
-          <Link to="/" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Home</Link>
-          <Link to="/map" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Map</Link>
-          <Link to="/dashboard" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Dashboard</Link>
-          <Link to="/alerts" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Alerts</Link>
-          <Link to="/hub" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Escalation Hub</Link>
-          <Link to="/about" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Resources</Link>
-          <Link to="/contact" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Contact</Link>
+          <NavLink to="/" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Home</NavLink>
+          <NavLink to="/map" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Map</NavLink>
+          <NavLink to="/dashboard" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Dashboard</NavLink>
+          <NavLink to="/alerts" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Alerts</NavLink>
+          <NavLink to="/hub" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Escalation Hub</NavLink>
+          <NavLink to="/about" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Resources</NavLink>
+          <NavLink to="/contact" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Contact</NavLink>
         </div>
 
         {/* Right Section: Auth/Actions */}
@@ -82,8 +82,8 @@ const Navbar = () => {
                 style={{ 
                   background: 'none', 
                   border: 'none', 
-                  color: 'var(--text-muted)', 
-                  fontWeight: 600, 
+                  color: '#000000', 
+                  fontWeight: 700, 
                   fontSize: '14px',
                   padding: '8px 16px',
                   whiteSpace: 'nowrap'
@@ -97,9 +97,9 @@ const Navbar = () => {
             </>
           ) : (
             <>
-              <Link to="/admin/login" className="nav-item-liquid" style={{ textDecoration: 'none', fontSize: '14px', whiteSpace: 'nowrap' }}>
+              <NavLink to="/admin/login" className="nav-item-liquid" style={{ textDecoration: 'none', fontSize: '14px', whiteSpace: 'nowrap' }}>
                 Admin Login
-              </Link>
+              </NavLink>
               <Link to="/report" className="btn-liquid" style={{ textDecoration: 'none', fontSize: '14px', whiteSpace: 'nowrap' }}>
                 Report Issue
               </Link>

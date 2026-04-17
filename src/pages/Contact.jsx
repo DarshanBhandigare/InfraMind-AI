@@ -1,9 +1,18 @@
 import React, { useState } from 'react';
-import { Mail, MapPin, Phone, Clock, ChevronDown, ChevronUp, Send, Building2, Zap, Headphones } from 'lucide-react';
-import commandCenter from '../assets/command-center.png';
+import { Mail, MapPin, Phone, Clock, ChevronDown, ChevronUp, Send, Building2, Zap, Headphones, CheckCircle2 } from 'lucide-react';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../services/firebase';
 
 const Contact = () => {
   const [activeFaq, setActiveFaq] = useState(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    department: '',
+    message: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const faqs = [
     {
@@ -28,15 +37,36 @@ const Contact = () => {
     setActiveFaq(activeFaq === index ? null : index);
   };
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.name || !formData.email || !formData.message) return;
+
+    setIsSubmitting(true);
+    try {
+      await addDoc(collection(db, 'contacts'), {
+        ...formData,
+        createdAt: serverTimestamp(),
+        status: 'unread'
+      });
+      setSubmitted(true);
+      setFormData({ name: '', email: '', department: '', message: '' });
+    } catch (error) {
+      console.error("Error submitting inquiry:", error);
+      alert("Something went wrong. Please try again later.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div style={{ background: 'transparent', minHeight: '100vh', paddingTop: '100px' }}>
       {/* Hero Section */}
       <section className="container" style={{ padding: '80px 0 40px' }}>
         <h1 style={{ fontSize: '64px', fontWeight: 800, letterSpacing: '-2px', marginBottom: '16px' }}>
-          Contact the Digital Architect.
+          Contact
         </h1>
         <p style={{ fontSize: '20px', color: 'var(--text-muted)', maxWidth: '600px', lineHeight: 1.6 }}>
-          Connect with our civic infrastructure team. Whether you're reporting an urgent maintenance need or inquiring about municipal data, we're here to bridge the gap between intelligence and action.
+          Connect with our team. Whether you're reporting an urgent maintenance need or inquiring about municipal data, we're here to bridge the gap between intelligence and action.
         </p>
       </section>
 
@@ -45,31 +75,85 @@ const Contact = () => {
         <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '40px' }}>
 
           {/* Inquiry Portal Form */}
-          <div className="card" style={{ padding: '48px' }}>
-            <h2 style={{ fontSize: '24px', color: 'var(--primary)', marginBottom: '32px' }}>Inquiry Portal</h2>
-            <form style={{ display: 'grid', gap: '24px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                <div>
-                  <label style={labelStyle}>Name</label>
-                  <input type="text" className="input-field" placeholder="Jane Cooper" />
+          <div className="card" style={{ padding: '48px', position: 'relative', overflow: 'hidden' }}>
+            {submitted ? (
+              <div style={{ padding: '40px 0', textAlign: 'center' }}>
+                <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+                  <CheckCircle2 size={40} color="#10b981" />
                 </div>
-                <div>
-                  <label style={labelStyle}>Email</label>
-                  <input type="email" className="input-field" placeholder="jane@citygov.org" />
-                </div>
+                <h2 style={{ fontSize: '32px', marginBottom: '12px' }}>Inquiry Received</h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: '18px', marginBottom: '32px' }}>
+                  Your message has been logged in our administrative command center. 
+                  A department representative will respond shortly.
+                </p>
+                <button 
+                  onClick={() => setSubmitted(false)}
+                  className="btn-primary" 
+                  style={{ width: 'fit-content', padding: '12px 32px' }}
+                >
+                  Send another message
+                </button>
               </div>
-              <div>
-                <label style={labelStyle}>Department/Organization</label>
-                <input type="text" className="input-field" placeholder="Public Works / Planning Dept" />
-              </div>
-              <div>
-                <label style={labelStyle}>Message</label>
-                <textarea className="input-field" rows="5" placeholder="Detail your inquiry or infrastructure concern..." style={{ resize: 'none' }}></textarea>
-              </div>
-              <button className="btn-primary" style={{ width: 'fit-content', padding: '12px 32px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                Submit Inquiry <Send size={18} />
-              </button>
-            </form>
+            ) : (
+              <>
+                <h2 style={{ fontSize: '24px', color: 'var(--primary)', marginBottom: '32px' }}>Inquiry Portal</h2>
+                <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '24px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                    <div>
+                      <label style={labelStyle}>Name</label>
+                      <input 
+                        type="text" 
+                        required
+                        className="input-field" 
+                        placeholder="Jane Cooper"
+                        value={formData.name}
+                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Email</label>
+                      <input 
+                        type="email" 
+                        required
+                        className="input-field" 
+                        placeholder="jane@citygov.org"
+                        value={formData.email}
+                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Department/Organization</label>
+                    <input 
+                      type="text" 
+                      className="input-field" 
+                      placeholder="Public Works / Planning Dept"
+                      value={formData.department}
+                      onChange={(e) => setFormData({...formData, department: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Message</label>
+                    <textarea 
+                      className="input-field" 
+                      rows="5" 
+                      required
+                      placeholder="Detail your inquiry or infrastructure concern..." 
+                      style={{ resize: 'none' }}
+                      value={formData.message}
+                      onChange={(e) => setFormData({...formData, message: e.target.value})}
+                    ></textarea>
+                  </div>
+                  <button 
+                    disabled={isSubmitting}
+                    className="btn-primary" 
+                    style={{ width: 'fit-content', padding: '12px 32px', display: 'flex', alignItems: 'center', gap: '8px', opacity: isSubmitting ? 0.7 : 1 }}
+                  >
+                    {isSubmitting ? 'Sending...' : 'Submit Inquiry'} <Send size={18} />
+                  </button>
+                </form>
+              </>
+            )}
           </div>
 
           {/* Info Cards Side */}

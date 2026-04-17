@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, ArrowRight, Play, Globe, CheckCircle, Activity, Zap, FileText } from 'lucide-react';
+import { Shield, ArrowRight, Play, Globe, CheckCircle, Activity, Zap, FileText, Bolt } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { subscribeToStats } from '../services/statsService';
 import { processReport } from '../services/dataSyncService';
+import ScrollReveal from '../components/ScrollReveal';
 
 const Home = () => {
   const [stats, setStats] = useState({ total: 0, high: 0, resolved: '0%' });
@@ -85,8 +86,8 @@ const Home = () => {
             >
               <div style={heroImageContainerStyle}>
                 <img
-                  src="https://images.unsplash.com/photo-1449824913935-59a10b8d2000?q=80&w=1470&auto=format&fit=crop"
-                  alt="City Command"
+                  src="https://i.pinimg.com/736x/ac/90/a0/ac90a0358fbeb4d5dda3619fdf414a19.jpg"
+                  alt="Bridge Construction"
                   style={heroImageStyle}
                 />
                 {/* Floating Glass Data Card */}
@@ -96,10 +97,11 @@ const Home = () => {
                   className="glass"
                   style={floatingCardStyle}
                 >
-                  <Activity size={24} color="var(--primary)" />
+
+                  <Bolt size={24} color="var(--primary)" />
                   <div>
-                    <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>System Calibration</div>
-                    <div style={{ fontSize: '20px', fontWeight: 800 }}>Nominal Status</div>
+                    <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>System Status</div>
+                    <div style={{ fontSize: '20px', fontWeight: 800 }}> Bridge Construction</div>
                   </div>
                 </motion.div>
               </div>
@@ -111,44 +113,50 @@ const Home = () => {
       {/* Real-time Stats Section */}
       <section style={{ padding: '100px 0', background: 'var(--surface)' }}>
         <div className="container">
-          <div style={statsGridStyle}>
-            <StatCard label="Live Reports" value={stats.total} icon={<Shield color="var(--primary)" />} color="#deebff" />
-            <StatCard label="High Risk Clusters" value={stats.high} icon={<AlertTriangle color="var(--critical)" />} color="#ffebe6" />
-            <StatCard label="Resolved Efficiency" value={stats.resolved} icon={<CheckCircle color="var(--safe)" />} color="#e3fcef" />
-          </div>
+          <ScrollReveal direction="up" delay={0.1}>
+            <div style={statsGridStyle}>
+              <StatCard label="Live Reports" value={stats.total} icon={<Shield color="var(--primary)" />} color="#deebff" />
+              <StatCard label="High Risk Clusters" value={stats.high} icon={<AlertTriangle color="var(--critical)" />} color="#ffebe6" />
+              <StatCard label="Resolved Efficiency" value={stats.resolved} icon={<CheckCircle color="var(--safe)" />} color="#e3fcef" />
+            </div>
+          </ScrollReveal>
 
           <div className="grid-2" style={{ marginTop: '80px', gap: '40px' }}>
             {/* Map Preview */}
-            <div style={mapPreviewStyle}>
-              <img src="https://i.pinimg.com/736x/17/85/f9/1785f9a5ffdb6e8070dc70579d1b044c.jpg" alt="Map" style={mapImageStyle} />
-              <div style={mapOverlayStyle}>
-                <div>
-                  <h3 style={{ color: 'white', fontSize: '28px', marginBottom: '8px' }}>Metropolitan Grid</h3>
-                  <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '15px' }}>Visualizing every sensor node and citizen report in real-time.</p>
+            <ScrollReveal direction="left" delay={0.2}>
+              <div style={mapPreviewStyle}>
+                <img src="https://i.pinimg.com/736x/17/85/f9/1785f9a5ffdb6e8070dc70579d1b044c.jpg" alt="Map" style={mapImageStyle} />
+                <div style={mapOverlayStyle}>
+                  <div>
+                    <h3 style={{ color: 'white', fontSize: '28px', marginBottom: '8px' }}>Metropolitan Grid</h3>
+                    <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '15px' }}>Visualizing every sensor node and citizen report in real-time.</p>
+                  </div>
+                  <Link to="/map" className="btn-primary" style={{ background: 'white', color: 'var(--text)', border: 'none' }}>Launch Live View</Link>
                 </div>
-                <Link to="/map" className="btn-primary" style={{ background: 'white', color: 'var(--text)', border: 'none' }}>Launch Live View</Link>
               </div>
-            </div>
+            </ScrollReveal>
 
             {/* Live Feed */}
-            <div className="card" style={{ padding: '40px', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-                <h3 style={{ fontSize: '20px' }}>Recent City Reports</h3>
-                <div className="pill pill-blue">LIVE FEED</div>
+            <ScrollReveal direction="right" delay={0.3}>
+              <div className="card" style={{ padding: '40px', display: 'flex', flexDirection: 'column', height: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+                  <h3 style={{ fontSize: '20px' }}>Recent City Reports</h3>
+                  <div className="pill pill-blue">LIVE FEED</div>
+                </div>
+                <div style={{ display: 'grid', gap: '16px' }}>
+                  {recentReports.length > 0 ? recentReports.map((report) => (
+                    <ReportRow key={report.id} report={report} />
+                  )) : (
+                    <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                      Waiting for metropolitan data synchronization...
+                    </div>
+                  )}
+                </div>
+                <Link to="/dashboard" style={{ marginTop: 'auto', paddingTop: '24px', textAlign: 'center', color: 'var(--primary)', fontWeight: 700, fontSize: '14px', textDecoration: 'none' }}>
+                  View Full Queue &rarr;
+                </Link>
               </div>
-              <div style={{ display: 'grid', gap: '16px' }}>
-                {recentReports.length > 0 ? recentReports.map((report) => (
-                  <ReportRow key={report.id} report={report} />
-                )) : (
-                  <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                    Waiting for metropolitan data synchronization...
-                  </div>
-                )}
-              </div>
-              <Link to="/dashboard" style={{ marginTop: 'auto', paddingTop: '24px', textAlign: 'center', color: 'var(--primary)', fontWeight: 700, fontSize: '14px', textDecoration: 'none' }}>
-                View Full Queue &rarr;
-              </Link>
-            </div>
+            </ScrollReveal>
           </div>
         </div>
       </section>
@@ -167,7 +175,7 @@ const Home = () => {
             {/* Footer links mapping... */}
           </div>
           <div style={footerBottomStyle}>
-            <span>© 2024 InfraMind AI. Built for BMC Mumbai.</span>
+            <span>© 2024 InfraMind AI.</span>
             <div style={{ display: 'flex', gap: '30px' }}>
               <span>STATUS: NOMINAL</span>
               <span>LICENSE: ENTERPRISE</span>
