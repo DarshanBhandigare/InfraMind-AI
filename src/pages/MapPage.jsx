@@ -119,6 +119,11 @@ const MapFocus = ({ issue }) => {
 const MapPage = () => {
   const [reports, setReports] = useState([]);
   const [selectedIssueId, setSelectedIssueId] = useState(null);
+  const [issueFilters, setIssueFilters] = useState({
+    Potholes: true,
+    Drainage: true,
+    Lighting: true
+  });
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'reports'), (snapshot) => {
@@ -129,11 +134,26 @@ const MapPage = () => {
     return unsubscribe;
   }, []);
 
-  const displayReports = useMemo(() => {
+  const baseReports = useMemo(() => {
     const normalizedReports = reports.map(normalizeReport);
     const mumbaiReports = normalizedReports.filter((report) => isInMumbaiRegion(report.location));
     return mumbaiReports.length > 0 ? mumbaiReports : MUMBAI_DEMO_REPORTS;
   }, [reports]);
+
+  const displayReports = useMemo(() => {
+    const activeKeys = Object.entries(issueFilters)
+      .filter(([, enabled]) => enabled)
+      .map(([key]) => key.toLowerCase());
+
+    if (!activeKeys.length) {
+      return [];
+    }
+
+    return baseReports.filter((report) => {
+      const normalizedType = (report.type || '').toLowerCase();
+      return activeKeys.some((key) => normalizedType.includes(key.slice(0, -1)) || normalizedType.includes(key));
+    });
+  }, [baseReports, issueFilters]);
 
   const selectedIssue = useMemo(
     () => displayReports.find((report) => report.id === selectedIssueId) || displayReports[0] || null,
@@ -157,9 +177,21 @@ const MapPage = () => {
         <div>
           <h4 style={sidebarHeadingStyle}>Issue Type</h4>
           <div style={{ display: 'grid', gap: '12px', marginTop: '16px' }}>
-            <FilterCheckbox label="Potholes" checked />
-            <FilterCheckbox label="Drainage" checked />
-            <FilterCheckbox label="Lighting" checked />
+            <FilterCheckbox
+              label="Potholes"
+              checked={issueFilters.Potholes}
+              onChange={() => toggleIssueFilter('Potholes', setIssueFilters)}
+            />
+            <FilterCheckbox
+              label="Drainage"
+              checked={issueFilters.Drainage}
+              onChange={() => toggleIssueFilter('Drainage', setIssueFilters)}
+            />
+            <FilterCheckbox
+              label="Lighting"
+              checked={issueFilters.Lighting}
+              onChange={() => toggleIssueFilter('Lighting', setIssueFilters)}
+            />
           </div>
         </div>
 
@@ -177,6 +209,11 @@ const MapPage = () => {
           <div style={{ fontSize: '14px', lineHeight: 1.6, color: 'var(--text-muted)' }}>
             The map now starts in Mumbai. Until ward-level live reports arrive here, example incidents are shown around the BMC service area.
           </div>
+          {!displayReports.length && (
+            <div style={{ fontSize: '12px', color: '#b45309', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '12px', padding: '10px 12px' }}>
+              No issues match the selected filters right now.
+            </div>
+          )}
           <div style={{ display: 'grid', gap: '10px' }}>
             {displayReports.slice(0, 3).map((report) => (
               <button
@@ -249,8 +286,11 @@ const MapPage = () => {
               zIndex: 1000,
               padding: 0,
               overflow: 'hidden',
-              border: 'none',
-              boxShadow: 'var(--shadow-lg)'
+              border: '1px solid rgba(255,255,255,0.45)',
+              background: 'rgba(255,255,255,0.68)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              boxShadow: '0 24px 44px rgba(23, 43, 77, 0.18)'
             }}
           >
             <div style={{ padding: '24px 24px 0' }}>
@@ -318,9 +358,16 @@ const MapPage = () => {
   );
 };
 
-const FilterCheckbox = ({ label, checked }) => (
+const toggleIssueFilter = (key, setIssueFilters) => {
+  setIssueFilters((current) => ({
+    ...current,
+    [key]: !current[key]
+  }));
+};
+
+const FilterCheckbox = ({ label, checked, onChange }) => (
   <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontSize: '14px', fontWeight: 500 }}>
-    <input type="checkbox" checked={checked} readOnly style={{ width: '18px', height: '18px', accentColor: 'var(--primary)' }} />
+    <input type="checkbox" checked={checked} onChange={onChange} style={{ width: '18px', height: '18px', accentColor: 'var(--primary)' }} />
     {label}
   </label>
 );
