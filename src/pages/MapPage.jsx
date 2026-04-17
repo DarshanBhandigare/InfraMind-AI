@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Circle, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { collection, onSnapshot } from 'firebase/firestore';
@@ -120,6 +120,7 @@ const MapFocus = ({ issue }) => {
 const MapPage = () => {
   const [reports, setReports] = useState([]);
   const [selectedIssueId, setSelectedIssueId] = useState(null);
+  const autoSelectedRef = useRef(false);
   const [issueFilters, setIssueFilters] = useState({
     Potholes: true,
     Drainage: true,
@@ -157,18 +158,21 @@ const MapPage = () => {
   }, [baseReports, issueFilters]);
 
   const selectedIssue = useMemo(
-    () => displayReports.find((report) => report.id === selectedIssueId) || displayReports[0] || null,
+    () => (selectedIssueId ? displayReports.find((report) => report.id === selectedIssueId) || null : null),
     [displayReports, selectedIssueId]
   );
 
   useEffect(() => {
     if (!displayReports.length) {
-      setSelectedIssueId(null);
+      if (selectedIssueId) setSelectedIssueId(null);
       return;
     }
 
-    if (!selectedIssueId || !displayReports.some((report) => report.id === selectedIssueId)) {
+    if (!autoSelectedRef.current) {
       setSelectedIssueId(displayReports[0].id);
+      autoSelectedRef.current = true;
+    } else if (selectedIssueId && !displayReports.some((report) => report.id === selectedIssueId)) {
+      setSelectedIssueId(null);
     }
   }, [displayReports, selectedIssueId]);
 
@@ -301,9 +305,9 @@ const MapPage = () => {
                   REF: {selectedIssue.id.substring(0, 8).toUpperCase()}
                 </span>
                 <button
-                  onClick={() => setSelectedIssueId(displayReports[0]?.id || null)}
-                  style={{ background: 'transparent', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                  aria-label="Reset to primary issue"
+                  onClick={() => setSelectedIssueId(null)}
+                  style={{ background: 'transparent', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                  aria-label="Close"
                 >
                   <X size={20} />
                 </button>
@@ -359,12 +363,9 @@ const MapPage = () => {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 72px', gap: '12px' }}>
-                <button className="btn-primary" style={{ width: '100%', padding: '14px' }}>
-                  Dispatch Crew
-                </button>
-                <button style={{ ...detailBoxStyle, display: 'flex', alignItems: 'center', justifyContent: 'center' }} aria-label="Share alert">
-                  <Share2 size={18} />
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button style={{ ...detailBoxStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px 20px', gap: '8px', cursor: 'pointer', border: 'none' }} aria-label="Share alert">
+                  <Share2 size={18} /> Share
                 </button>
               </div>
             </div>
