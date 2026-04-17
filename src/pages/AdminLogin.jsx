@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Shield, Lock, User, Terminal, AlertCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
@@ -19,7 +20,6 @@ const AdminLogin = () => {
 
     try {
       await login(email, password);
-      // In a real app, we'd check for an admin role here
       navigate('/admin/dashboard');
     } catch (err) {
       setError(err.message || 'Authentication failed. Please check your credentials.');
@@ -34,53 +34,66 @@ const AdminLogin = () => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: '#0a0a0a',
-      padding: '2rem'
+      background: 'linear-gradient(135deg, #f0f7ff 0%, #ffffff 50%, #f0f7ff 100%)',
+      padding: '24px',
+      position: 'relative',
+      overflow: 'hidden'
     }}>
-      <div style={{
-        width: '100%',
-        maxWidth: '480px',
-        padding: '3rem',
-        background: '#1a1a1a',
-        border: '1px solid #333',
-        borderRadius: 'var(--radius-lg)',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
-      }}>
-        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+      {/* Decorative background elements */}
+      <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '400px', height: '400px', background: 'rgba(0, 82, 204, 0.03)', borderRadius: '50%', filter: 'blur(80px)' }} />
+      <div style={{ position: 'absolute', bottom: '-10%', left: '-5%', width: '400px', height: '400px', background: 'rgba(0, 82, 204, 0.03)', borderRadius: '50%', filter: 'blur(80px)' }} />
+
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        style={{
+          width: '100%',
+          maxWidth: '440px',
+          padding: '48px',
+          background: 'rgba(255, 255, 255, 0.7)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.5)',
+          borderRadius: '32px',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.05)',
+          zIndex: 1
+        }}
+      >
+        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
           <div style={{ 
             display: 'inline-flex', 
-            padding: '1.2rem', 
-            borderRadius: '16px', 
-            background: 'rgba(59, 130, 246, 0.1)',
-            border: '1px solid rgba(59, 130, 246, 0.2)',
-            marginBottom: '1.5rem'
+            padding: '16px', 
+            borderRadius: '20px', 
+            background: 'var(--primary-light)',
+            marginBottom: '20px',
+            color: 'var(--primary)'
           }}>
-            <Shield size={36} color="var(--primary)" />
+            <Shield size={32} />
           </div>
-          <h1 style={{ color: 'white', fontSize: '1.8rem', fontWeight: 700, margin: 0 }}>Terminal Access</h1>
-          <p style={{ color: '#888', marginTop: '0.5rem', fontSize: '0.9rem' }}>
-            Authorized personnel only. Municipal Administrative Portal.
+          <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#091E42', margin: 0, letterSpacing: '-0.5px' }}>Terminal Access</h1>
+          <p style={{ color: 'var(--text-muted)', marginTop: '8px', fontSize: '15px' }}>
+            Authorized personnel only. Municipal Portal.
           </p>
         </div>
 
         {error && (
           <div style={{ 
-            background: 'rgba(239, 68, 68, 0.1)', 
-            border: '1px solid rgba(239, 68, 68, 0.2)',
-            padding: '1rem',
-            borderRadius: 'var(--radius-sm)',
-            color: '#ef4444',
-            fontSize: '0.85rem',
+            background: '#fff1f0', 
+            border: '1px solid #ffa39e',
+            padding: '12px 16px',
+            borderRadius: '12px',
+            color: '#cf1322',
+            fontSize: '14px',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.8rem',
-            marginBottom: '2rem'
+            gap: '10px',
+            marginBottom: '24px'
           }}>
             <AlertCircle size={18} /> {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '1.5rem' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '24px' }}>
           <div>
             <label style={labelStyle}>Administrative Email</label>
             <div style={{ position: 'relative' }}>
@@ -90,7 +103,8 @@ const AdminLogin = () => {
                 required 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                style={adminInputStyle} 
+                className="input-field"
+                style={{ paddingLeft: '48px', background: 'white' }} 
                 placeholder="admin@inframind.gov"
               />
             </div>
@@ -105,7 +119,8 @@ const AdminLogin = () => {
                 required 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                style={adminInputStyle} 
+                className="input-field"
+                style={{ paddingLeft: '48px', background: 'white' }} 
                 placeholder="••••••••••••"
               />
             </div>
@@ -114,15 +129,12 @@ const AdminLogin = () => {
           <button 
             type="submit" 
             disabled={loading}
+            className="btn-liquid"
             style={{
               width: '100%',
-              padding: '1rem',
-              background: 'var(--primary)',
-              color: 'white',
-              borderRadius: 'var(--radius-md)',
-              fontWeight: 700,
-              fontSize: '1rem',
-              marginTop: '1rem',
+              padding: '14px',
+              fontSize: '16px',
+              marginTop: '8px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -134,49 +146,37 @@ const AdminLogin = () => {
           </button>
         </form>
 
-        <div style={{ marginTop: '3rem', textAlign: 'center', borderTop: '1px solid #333', paddingTop: '2rem' }}>
-          <p style={{ color: '#666', fontSize: '0.8rem', marginBottom: '1rem' }}>
-            Security Warning: All access attempts are logged and monitored. 
+        <div style={{ marginTop: '40px', textAlign: 'center', borderTop: '1px solid var(--border)', paddingTop: '24px' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '16px', lineHeight: 1.5 }}>
+            Security Warning: All access attempts are logged. 
             Unauthorized access is strictly prohibited.
           </p>
-          <Link to="/" style={{ color: 'var(--primary)', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 600 }}>
+          <Link to="/" style={{ color: 'var(--primary)', textDecoration: 'none', fontSize: '14px', fontWeight: 600 }}>
             Return to Public Portal
           </Link>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
 
 const labelStyle = {
   display: 'block',
-  fontSize: '0.75rem',
-  fontWeight: 700,
+  fontSize: '11px',
+  fontWeight: 800,
   textTransform: 'uppercase',
-  color: '#888',
-  marginBottom: '0.8rem',
+  color: 'var(--text-muted)',
+  marginBottom: '8px',
   letterSpacing: '1px'
 };
 
 const iconStyle = {
   position: 'absolute',
-  left: '1.2rem',
+  left: '16px',
   top: '50%',
   transform: 'translateY(-50%)',
-  color: '#555'
-};
-
-const adminInputStyle = {
-  width: '100%',
-  padding: '1.2rem 1.2rem 1.2rem 3.5rem',
-  background: '#222',
-  border: '1px solid #333',
-  borderRadius: '12px',
-  color: 'white',
-  outline: 'none',
-  fontSize: '1rem',
-  transition: 'all 0.3s ease',
-  fontFamily: 'monospace'
+  color: 'var(--text-muted)',
+  zIndex: 1
 };
 
 export default AdminLogin;
