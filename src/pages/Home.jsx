@@ -19,9 +19,9 @@ const Home = () => {
               <Shield size={12} fill="var(--primary)" /> NEXT-GEN CIVIC INTELLIGENCE
             </div>
             <h1 style={{ fontSize: '64px', lineHeight: 1.1, marginBottom: '24px', letterSpacing: '-1.5px' }}>
-              Predictive <br />
-              Infrastructure <br />
-              for a <span style={{ color: 'var(--primary)' }}>Smarter City</span>
+              Predict<br />
+              Failure.<br />
+              <span style={{ color: 'var(--primary)' }}>  Before It</span><span style={{ color: 'var(--primary)' }}> <br />Happens.</span>
             </h1>
             <p style={{ fontSize: '18px', color: 'var(--text-muted)', marginBottom: '40px', maxWidth: '480px' }}>
               Leveraging real-time telemetry and AI to identify urban maintenance needs before they impact the community.
