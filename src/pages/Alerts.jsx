@@ -289,6 +289,25 @@ const Alerts = () => {
   );
 };
 
+const HighlightedText = ({ text, highlight }) => {
+  if (!text) return null;
+  const strText = String(text);
+  if (!highlight || !String(highlight).trim()) return <span>{strText}</span>;
+  const regex = new RegExp(`(${highlight})`, 'gi');
+  const parts = strText.split(regex);
+  return (
+    <span>
+      {parts.map((part, i) => 
+        regex.test(part) ? (
+          <span key={i} style={{ backgroundColor: 'rgba(28, 201, 255, 0.3)', color: '#091E42', fontWeight: 800, borderRadius: '2px', padding: '0 2px' }}>{part}</span>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </span>
+  );
+};
+
 const AlertsPanel = ({ filter, setFilter, filteredAlerts, overviewStats }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -400,7 +419,9 @@ const AlertsPanel = ({ filter, setFilter, filteredAlerts, overviewStats }) => {
                     onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
                   >
                     <Search size={14} color="var(--text-muted)" />
-                    <span style={{ fontSize: '14px', color: '#091E42', fontWeight: 500 }}>{suggestion}</span>
+                    <span style={{ fontSize: '14px', color: '#091E42', fontWeight: 500 }}>
+                      <HighlightedText text={suggestion} highlight={searchQuery} />
+                    </span>
                   </div>
                 ))}
               </motion.div>
@@ -450,7 +471,7 @@ const AlertsPanel = ({ filter, setFilter, filteredAlerts, overviewStats }) => {
     <section style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '22px', alignItems: 'start' }}>
       <AnimatePresence mode="popLayout">
         {displayedAlerts.map((alert, index) => (
-          <AlertCard key={alert.id} alert={alert} index={index} />
+          <AlertCard key={alert.id} alert={alert} index={index} searchQuery={searchQuery} />
         ))}
       </AnimatePresence>
     </section>
@@ -590,7 +611,7 @@ const OverviewPanel = ({ overviewStats, trendData, categoryChartData, tableRows 
   </>
 );
 
-const AlertCard = ({ alert, index }) => {
+const AlertCard = ({ alert, index, searchQuery = '' }) => {
   const Icon = getSeverityIcon(alert.category);
 
   return (
@@ -625,10 +646,12 @@ const AlertCard = ({ alert, index }) => {
       </div>
 
       <div>
-        <h3 style={{ fontSize: '25px', lineHeight: 1.25, marginBottom: '14px', maxWidth: '320px' }}>{alert.type}</h3>
+        <h3 style={{ fontSize: '25px', lineHeight: 1.25, marginBottom: '14px', maxWidth: '320px' }}>
+          <HighlightedText text={alert.type} highlight={searchQuery} />
+        </h3>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '15px', marginBottom: '12px' }}>
           <MapPin size={15} />
-          <span>{alert.address || 'Mumbai location pending'}</span>
+          <span><HighlightedText text={alert.address || 'Mumbai location pending'} highlight={searchQuery} /></span>
         </div>
         {alert.isDelayed && (
           <div style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', border: '1px solid #e2e8f0' }}>
@@ -636,7 +659,9 @@ const AlertCard = ({ alert, index }) => {
             <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--primary)' }}>₹{alert.aiData.estimatedCost.toLocaleString()}</div>
           </div>
         )}
-        <p style={{ color: 'var(--text-muted)', fontSize: '16px', lineHeight: 1.7 }}>{alert.description}</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: '16px', lineHeight: 1.7 }}>
+          <HighlightedText text={alert.description} highlight={searchQuery} />
+        </p>
       </div>
 
       <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '14px', paddingTop: '18px', borderTop: '1px solid #e5e7eb' }}>
