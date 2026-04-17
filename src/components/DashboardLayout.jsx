@@ -63,10 +63,11 @@ const DashboardLayout = ({ children }) => {
             <SidebarLink to="/dashboard" icon={<Wrench size={20} />} label="Maintenance" />
             <SidebarLink to="/alerts" icon={<ShieldCheck size={20} />} label="Public Safety" />
             
-            <div style={{ ...sectionLabelStyle, marginTop: '32px' }}>SYSTEM</div>
-            <button className="btn-primary" style={{ width: '100%', padding: '14px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '24px' }}>
-              <AlertCircle size={18} /> Emergency Dispatch
-            </button>
+            {!user && (
+              <button className="btn-primary" style={{ width: '100%', padding: '14px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '24px' }}>
+                <AlertCircle size={18} /> Emergency Dispatch
+              </button>
+            )}
             
             <SidebarLink to="/contact" icon={<LifeBuoy size={20} />} label="Help Center" />
             <button onClick={handleLogout} style={logoutButtonStyle}>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { db } from '../services/firebase';
 import { processReport } from '../services/dataSyncService';
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
@@ -60,10 +60,35 @@ const Dashboard = () => {
     };
   }, []);
 
+  const riskDistribution = useMemo(() => {
+    const counts = { safe: 0, watch: 0, high: 0, critical: 0 };
+    reports.forEach(r => {
+      if (r.score > 80) counts.critical++;
+      else if (r.score > 60) counts.high++;
+      else if (r.score > 40) counts.watch++;
+      else counts.safe++;
+    });
+    
+    // Default to placeholders if no data, but label as 'No Data'
+    const total = reports.length || 1;
+    return [
+      (counts.safe / total) * 100 || 100,
+      (counts.watch / total) * 100 || 0,
+      (counts.high / total) * 100 || 0,
+      (counts.critical / total) * 100 || 0
+    ];
+  }, [reports]);
+
+  const systemHealth = useMemo(() => {
+    if (reports.length === 0) return '100%';
+    const criticals = reports.filter(r => r.score > 80).length;
+    return `${Math.max(0, 100 - (criticals * 5))}%`;
+  }, [reports]);
+
   const chartData = {
     labels: ['Safe', 'Watch', 'High', 'Critical'],
     datasets: [{
-      data: [65, 20, 10, 5],
+      data: riskDistribution,
       backgroundColor: ['#36B37E', '#FFAB00', '#FF8B00', '#FF5630'],
       borderWidth: 0,
     }]
@@ -78,7 +103,7 @@ const Dashboard = () => {
             <p style={{ fontSize: '18px', color: 'var(--text-muted)' }}>Real-time metropolitan infrastructure overview.</p>
           </div>
           <div className="pill pill-blue" style={{ height: 'fit-content' }}>
-            <TrendingUp size={12} /> System Health: 98.4%
+            <TrendingUp size={12} /> System Health: {systemHealth}
           </div>
         </header>
 

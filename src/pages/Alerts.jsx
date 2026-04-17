@@ -33,56 +33,7 @@ import { processReport } from '../services/dataSyncService';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Tooltip, Legend, Filler);
 
-const demoAlerts = [
-  {
-    id: 'bmc-alert-001',
-    type: 'Bridge Surface Settlement Detected',
-    category: 'Critical',
-    color: '#dc2626',
-    address: 'Eastern Freeway Ramp, Wadala',
-    description: 'Road deck settlement and edge cracking were identified on the approach lane. Immediate barricading and structural inspection are recommended.',
-    createdAtLabel: '12 min ago',
-    score: 89,
-    status: 'Immediate Action',
-    tag: 'Critical'
-  },
-  {
-    id: 'bmc-alert-002',
-    type: 'Monsoon Drain Overflow Warning',
-    category: 'High Risk',
-    color: '#b45309',
-    address: 'Sion Circle Junction',
-    description: 'Stormwater capacity is nearing threshold during current rainfall. Field crew should clear inlet blockage before peak runoff reaches the corridor.',
-    createdAtLabel: '26 min ago',
-    score: 76,
-    status: 'Escalated',
-    tag: 'Weather'
-  },
-  {
-    id: 'bmc-alert-003',
-    type: 'Streetlight Outage Cluster',
-    category: 'Medium',
-    color: '#2563eb',
-    address: 'Linking Road, Bandra West',
-    description: 'A concentrated outage pocket is affecting visibility across a busy evening pedestrian stretch. Maintenance can be bundled into the next ward visit.',
-    createdAtLabel: '48 min ago',
-    score: 58,
-    status: 'Scheduled',
-    tag: 'System'
-  },
-  {
-    id: 'bmc-alert-004',
-    type: 'Water Main Refurbishment Window',
-    category: 'Low',
-    color: '#16a34a',
-    address: 'DN Nagar Service Lane',
-    description: 'Planned replacement work remains on track. Pressure may dip briefly overnight, but no active hazard is expected for surrounding blocks.',
-    createdAtLabel: '2 hr ago',
-    score: 34,
-    status: 'Maintenance',
-    tag: 'Maintenance'
-  }
-];
+// Demo alerts removed in favor of live Firebase data
 
 const severityOptions = ['All', 'Critical', 'High Risk', 'Medium', 'Low'];
 const trendLabels = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr'];
@@ -117,9 +68,7 @@ const Alerts = () => {
     return unsubscribe;
   }, []);
 
-  const allAlerts = useMemo(() => (
-    alerts.length > 0 ? alerts : demoAlerts.map(processReport)
-  ), [alerts]);
+  const allAlerts = useMemo(() => alerts, [alerts]);
 
   const filteredAlerts = useMemo(() => (
     filter === 'All' ? allAlerts : allAlerts.filter((alert) => alert.category === filter)
@@ -150,12 +99,14 @@ const Alerts = () => {
 
   const trendData = useMemo(() => {
     const base = overviewStats.active;
+    // For demo purposes, we keep the trend shape but offset it by the actual active count
+    // In a full production app, this would be a time-series query
     return {
       labels: trendLabels,
       datasets: [
         {
           label: 'Complaints',
-          data: [180, 220, 190, 305, 272, 338, 286].map((value) => value + base),
+          data: [12, 18, 15, 24, 20, 28, 22].map((value) => value + base),
           borderColor: '#1cc9ff',
           backgroundColor: 'rgba(28, 201, 255, 0.14)',
           fill: true,
@@ -165,7 +116,7 @@ const Alerts = () => {
         },
         {
           label: 'Resolved',
-          data: [146, 185, 162, 242, 220, 281, 210].map((value) => value + Math.floor(base / 2)),
+          data: [8, 12, 10, 16, 14, 18, 14].map((value) => value + Math.floor(base / 2)),
           borderColor: '#22d37f',
           backgroundColor: 'rgba(34, 211, 127, 0.10)',
           fill: true,
@@ -177,23 +128,30 @@ const Alerts = () => {
     };
   }, [overviewStats.active]);
 
+  const categoryCounts = useMemo(() => {
+    const counts = { Pothole: 0, Drainage: 0, Lighting: 0, Pipeline: 0, Other: 0 };
+    allAlerts.forEach(a => {
+      const type = a.type?.toLowerCase() || '';
+      if (type.includes('pothole')) counts.Pothole++;
+      else if (type.includes('drain')) counts.Drainage++;
+      else if (type.includes('light')) counts.Lighting++;
+      else if (type.includes('pipe')) counts.Pipeline++;
+      else counts.Other++;
+    });
+    return Object.values(counts);
+  }, [allAlerts]);
+
   const categoryChartData = useMemo(() => ({
     labels: ['Potholes', 'Drains', 'Streetlights', 'Pipelines', 'Other'],
     datasets: [
       {
-        data: [
-          Math.max(8, overviewStats.critical + 7),
-          Math.max(5, overviewStats.high + 4),
-          Math.max(4, overviewStats.medium + 3),
-          Math.max(3, overviewStats.low + 2),
-          2
-        ],
+        data: categoryCounts,
         backgroundColor: ['#ff174f', '#ff7a00', '#ffb300', '#2563eb', '#1cc9ff'],
         borderWidth: 0,
         cutout: '56%'
       }
     ]
-  }), [overviewStats]);
+  }), [categoryCounts]);
 
   const tableRows = useMemo(() => (
     allAlerts

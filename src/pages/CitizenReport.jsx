@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { db } from '../services/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { calculateRiskScore } from '../utils/riskEngine';
@@ -21,22 +21,58 @@ import {
 import { updateGlobalStats } from '../services/statsService';
 import { generateAIData } from '../services/dataSyncService';
 
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix for default marker icon in Leaflet + React
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+
+const defaultIcon = L.icon({
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41]
+});
+
+const MUMBAI_CENTER = [19.076, 72.8777];
+
+const LocationPicker = ({ onLocationSelect }) => {
+  useMapEvents({
+    click(e) {
+      const { lat, lng } = e.latlng;
+      onLocationSelect({ lat, lng });
+    },
+  });
+  return null;
+};
+
 const CitizenReport = () => {
   const { user } = useAuth();
+  const fileInputRef = useRef(null);
+  const [selectedFileName, setSelectedFileName] = useState('');
   const [formData, setFormData] = useState({
     type: '',
     severity: '1',
     description: '',
-    location: null,
+    location: { lat: 19.076, lng: 72.8777 },
     address: ''
   });
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const navigate = useNavigate();
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedFileName(file.name);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!user) return; // Should be blocked by overlay but safety first
+    if (!user) return;
     if (!formData.type) return alert("Please select an issue type");
     setLoading(true);
 
@@ -53,26 +89,31 @@ const CitizenReport = () => {
       const tempId = `rep-${Date.now()}`;
       const aiMetadata = generateAIData(tempId, formData.type);
 
-      // 1. Submit the report doc with embedded AI insights
       await addDoc(collection(db, 'reports'), {
         ...formData,
         ...riskData,
-        aiData: aiMetadata, // Persist AI data to Firebase
+        aiData: aiMetadata,
         userId: user.uid,
         status: 'reported',
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
+        fileName: selectedFileName
       });
 
-      // 2. Update global statistics atomically
-      await updateGlobalStats({
-        totalReports: 1,
-        highRiskCount: riskData.score > 70 ? 1 : 0
-      });
+      // Try to update stats, but don't block the UI if it fails
+      try {
+        await updateGlobalStats({
+          totalReports: 1,
+          highRiskCount: riskData.score > 70 ? 1 : 0
+        });
+      } catch (statsErr) {
+        console.warn("Global stats update failed, but report was saved.", statsErr);
+      }
 
       setSubmitted(true);
       setTimeout(() => navigate('/dashboard'), 2000);
     } catch (error) {
       console.error("Error submitting report:", error);
+      alert("Submission failed: " + (error.message || "Unknown error"));
     } finally {
       setLoading(false);
     }
@@ -90,11 +131,9 @@ const CitizenReport = () => {
     );
   }
 
-  // --- RENDERING LOGIC ---
-
   const renderPublicView = () => (
     <div className="dot-grid" style={{ minHeight: '100vh', paddingTop: '40px' }}>
-      <div className="container">
+      <div className="container" style={{ paddingBottom: '60px' }}>
         <h1 style={{ fontSize: '56px', marginBottom: '16px', letterSpacing: '-2px' }}>Report an Issue</h1>
         <p style={{ fontSize: '18px', color: 'var(--text-muted)', marginBottom: '64px', maxWidth: '600px' }}>
           Help us maintain the city's pulse. Your reports directly inform maintenance priorities and infrastructure investments.
@@ -104,48 +143,28 @@ const CitizenReport = () => {
           {/* Form Container with Overlay */}
           <div style={{ position: 'relative' }}>
             <div className="card" style={{ padding: '48px', opacity: user ? 1 : 0.4, pointerEvents: user ? 'all' : 'none' }}>
-               <form style={{ display:'grid', gap:'32px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-                    <div>
-                      <label style={labelStyle}>INFRASTRUCTURE CATEGORY</label>
-                      <div style={{ position: 'relative' }}>
-                        <select className="input-field" style={{ appearance: 'none' }}>
-                          <option>Select Issue Type</option>
-                          <option>Pothole</option>
-                          <option>Streetlight</option>
-                        </select>
-                        <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
-                      </div>
-                    </div>
-                    <div>
-                      <label style={labelStyle}>SEVERITY LEVEL</label>
-                      <div style={{ position: 'relative' }}>
-                        <select className="input-field" style={{ appearance: 'none' }}>
-                          <option>Low (Cosmetic/Minor)</option>
-                        </select>
-                        <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
-                      </div>
-                    </div>
+              <div style={{ display: 'grid', gap: '32px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                  <div>
+                    <label style={labelStyle}>CATEGORY</label>
+                    <select className="input-field" disabled>
+                      <option>Select Issue Type</option>
+                    </select>
                   </div>
                   <div>
-                    <label style={labelStyle}>PRECISE LOCATION</label>
-                    <div style={{ position: 'relative' }}>
-                      <MapPin size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)' }} />
-                      <input className="input-field" style={{ paddingLeft: '48px' }} placeholder="Enter address or drag map pin" />
-                    </div>
-                    <div style={{ height: '240px', background: '#eee', marginTop: '20px', borderRadius: '16px', position: 'relative', overflow: 'hidden' }}>
-                       <img src="https://images.unsplash.com/photo-1526778548025-fa2f459cd5ce?q=80&w=600" alt="Map" style={{ width:'100%', height:'100%', objectFit:'cover', opacity:0.3}} />
-                       <MapPin size={32} color="var(--primary)" style={{ position:'absolute', left:'50%', top:'50%', transform:'translate(-50%, -50%)' }} />
-                    </div>
+                    <label style={labelStyle}>SEVERITY</label>
+                    <select className="input-field" disabled>
+                      <option>Low (Cosmetic/Minor)</option>
+                    </select>
                   </div>
-                  <div>
-                    <label style={labelStyle}>INCIDENT DETAILS</label>
-                    <textarea className="input-field" rows="4" placeholder="Describe the issue, its impact, and any recent changes..."></textarea>
-                  </div>
-               </form>
+                </div>
+                <div>
+                  <label style={labelStyle}>PRECISE LOCATION</label>
+                  <input className="input-field" disabled placeholder="Sign in to define location" />
+                </div>
+              </div>
             </div>
 
-            {/* Login Overlay */}
             {!user && (
               <div className="glass" style={{ 
                 position: 'absolute', 
@@ -160,57 +179,22 @@ const CitizenReport = () => {
                   <div style={{ width: '64px', height: '64px', background: 'var(--primary)', color: 'white', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
                     <Shield size={32} />
                   </div>
-                  <h3 style={{ fontSize: '24px', marginBottom: '12px' }}>Final Step Required</h3>
+                  <h3 style={{ fontSize: '24px', marginBottom: '12px' }}>Authentication Required</h3>
                   <p style={{ color: 'var(--text-muted)', fontSize: '15px', marginBottom: '32px' }}>
-                    To verify reports and ensure public accountability, an account is required to submit infrastructure issues.
+                    To ensure accountability and track progress, an account is required to submit infrastructure reports.
                   </p>
                   <div style={{ display: 'grid', gap: '12px' }}>
                     <Link to="/login" className="btn-primary" style={{ padding: '16px', textDecoration: 'none' }}>Sign in to Submit &rarr;</Link>
-                    <Link to="/signup" className="btn-outline" style={{ padding: '16px', textDecoration: 'none' }}>Create New Account</Link>
-                  </div>
-                  <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', marginTop: '24px', letterSpacing: '1px' }}>
-                    ESTIMATED VERIFICATION: INSTANT
                   </div>
                 </div>
               </div>
             )}
           </div>
-
-          {/* Sidebar */}
-          <div style={{ display: 'grid', gap: '32px' }}>
-            <div style={{ background: 'var(--primary)', padding: '40px', borderRadius: '24px', color: 'white' }}>
-              <h3 style={{ color: 'white', fontSize: '20px', marginBottom: '24px' }}>Why do I need to log in?</h3>
-              <BenefitItem icon={<Zap size={20} />} title="Real-time Tracking" text="Get notified the moment a crew is dispatched to your reported location." />
-              <BenefitItem icon={<Clock size={20} />} title="Contribution History" text="View all your previous reports and their final resolutions in one dashboard." />
-              <BenefitItem icon={<Shield size={20} />} title="Data Integrity" text="Secure identification prevents spam and helps prioritize high-impact issues." />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-              <div className="card">
-                <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--primary)', letterSpacing: '1px' }}>RESOLUTION RATE</div>
-                <div style={{ fontSize: '32px', fontWeight: 800 }}>94.2%</div>
-              </div>
-              <div className="card">
-                <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--primary)', letterSpacing: '1px' }}>RESPONSE TIME</div>
-                <div style={{ fontSize: '32px', fontWeight: 800 }}>&lt; 4hr</div>
-              </div>
-            </div>
-
-            <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#eee', overflow: 'hidden' }}>
-                <img src="https://images.unsplash.com/photo-1574631027503-455b5420364d?q=80&w=100" alt="Repair" style={{ width:'100%', height:'100%', objectFit:'cover'}} />
-              </div>
-              <div>
-                <div style={{ fontSize: '14px', fontWeight: 700 }}>Sector 7 Lighting Restored</div>
-                <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>RESOLVED 12M AGO</div>
-              </div>
-            </div>
-
-            <div style={{ background: '#EBF2FF', padding: '16px 24px', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'var(--primary)' }}>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 700 }}>
-                 <Zap size={18} /> System Health: 98%
-               </div>
-               <ArrowRight size={18} />
+          
+          <div style={{ display: 'grid', gap: '22px' }}>
+            <div className="card">
+               <h4 style={{ ...labelStyle, color: 'var(--primary)' }}>Real-time Accountability</h4>
+               <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Every report is time-stamped and assigned a priority score instantly by our predictive maintenance engine.</p>
             </div>
           </div>
         </div>
@@ -221,24 +205,22 @@ const CitizenReport = () => {
   const renderMemberView = () => (
     <div style={{ padding: '40px' }}>
       <div style={{ marginBottom: '40px' }}>
-        <h1 style={{ fontSize: '36px', marginBottom: '8px' }}>Report an Issue</h1>
+        <h1 style={{ fontSize: '36px', marginBottom: '8px' }}>Asset Report Entry</h1>
         <p style={{ color: 'var(--text-muted)' }}>
-          Help us maintain District 4. Submit details regarding infrastructure damage or maintenance needs, and our team will prioritize the dispatch.
+          Logged in as {user.email}. Precisely define the infrastructure issue for rapid response.
         </p>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '32px' }}>
-        {/* Left Column */}
         <div style={{ display: 'grid', gap: '32px' }}>
-          {/* Issue Details Card */}
           <div className="card" style={{ padding: '32px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', color: 'var(--primary)' }}>
-              <FileText size={24} />
-              <h3 style={{ fontSize: '18px' }}>Issue Details</h3>
+              <Shield size={24} />
+              <h3 style={{ fontSize: '18px' }}>Technical Parameters</h3>
             </div>
             <div style={{ display: 'grid', gap: '24px' }}>
               <div>
-                <label style={labelStyle}>ISSUE TYPE</label>
+                <label style={labelStyle}>INFRASTRUCTURE CATEGORY</label>
                 <div style={{ position: 'relative' }}>
                   <select 
                     className="input-field" 
@@ -246,19 +228,39 @@ const CitizenReport = () => {
                     value={formData.type}
                     onChange={(e) => setFormData({...formData, type: e.target.value})}
                   >
-                    <option value="">Select an issue type</option>
+                    <option value="">Select asset class</option>
                     <option>Pothole</option>
-                    <option>Water Leak</option>
+                    <option>Drainage</option>
+                    <option>Streetlight</option>
+                    <option>Water Leakage</option>
+                    <option>Traffic System</option>
                   </select>
                   <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
                 </div>
               </div>
               <div>
-                <label style={labelStyle}>DESCRIPTION</label>
+                <label style={labelStyle}>SEVERITY ESTIMATE</label>
+                <div style={{ position: 'relative' }}>
+                  <select 
+                    className="input-field" 
+                    style={{ background: '#F8F9FB', border: '1px solid var(--border)', appearance: 'none' }}
+                    value={formData.severity}
+                    onChange={(e) => setFormData({...formData, severity: e.target.value})}
+                  >
+                    <option value="1">Low - Minor Utility Impact</option>
+                    <option value="2">Medium - Functional Impairment</option>
+                    <option value="3">High - Safety Hazard</option>
+                    <option value="4">Critical - Immediate Structural Threat</option>
+                  </select>
+                  <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
+                </div>
+              </div>
+              <div>
+                <label style={labelStyle}>TECHNICAL DESCRIPTION</label>
                 <textarea 
                   className="input-field" 
-                  rows="6" 
-                  placeholder="Provide as much detail as possible about the issue..."
+                  rows="5" 
+                  placeholder="Describe the visible damage, approximate dimensions, and impact on city services..."
                   style={{ background: '#F8F9FB', border: '1px solid var(--border)' }}
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
@@ -267,70 +269,93 @@ const CitizenReport = () => {
             </div>
           </div>
 
-          {/* Upload Card */}
           <div className="card" style={{ padding: '32px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', color: 'var(--primary)' }}>
               <Upload size={24} />
-              <h3 style={{ fontSize: '18px' }}>Upload Photo</h3>
+              <h3 style={{ fontSize: '18px' }}>Evidence Upload</h3>
             </div>
             <div style={{ 
               border: '2px dashed var(--border)', 
               borderRadius: '16px', 
-              padding: '48px', 
+              padding: '40px', 
               textAlign: 'center',
               background: '#F8F9FB'
             }}>
               <div style={{ width: '48px', height: '48px', background: '#D1E2FF', color: 'var(--primary)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
                 <Upload size={24} />
               </div>
-              <div style={{ fontWeight: 700, marginBottom: '4px' }}>Drag and drop images here</div>
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '24px' }}>PNG, JPG up to 10MB</div>
-              <button className="btn-outline" style={{ padding: '10px 24px', background: 'white' }}>Browse Files</button>
+              {selectedFileName ? (
+                <div style={{ color: 'var(--primary)', fontWeight: 700, marginBottom: '8px' }}>{selectedFileName}</div>
+              ) : (
+                <div style={{ fontWeight: 700, marginBottom: '4px' }}>Evidence required (JPG/PNG)</div>
+              )}
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '24px' }}>Maximum file size: 10MB</div>
+              <input 
+                ref={fileInputRef} 
+                type="file" 
+                onChange={handleFileChange} 
+                style={{ display: 'none' }} 
+              />
+              <button 
+                className="btn-outline" 
+                onClick={() => fileInputRef.current.click()}
+                style={{ padding: '10px 24px', background: 'white' }}
+              >
+                Browse Files
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Right Column: Location */}
         <div className="card" style={{ padding: '32px', height: 'fit-content' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', color: 'var(--primary)' }}>
             <MapPin size={24} />
-            <h3 style={{ fontSize: '18px' }}>Location</h3>
+            <h3 style={{ fontSize: '18px' }}>Geographic Context</h3>
           </div>
           <div style={{ display: 'grid', gap: '24px' }}>
             <div>
-              <label style={labelStyle}>ADDRESS OR LOCATION</label>
+              <label style={labelStyle}>PRIMARY ADDRESS</label>
               <div style={{ position: 'relative' }}>
                 <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                 <input 
                   className="input-field" 
+                  value={formData.address}
+                  onChange={(e) => setFormData({...formData, address: e.target.value})}
                   style={{ paddingLeft: '48px', background: '#F8F9FB', border: '1px solid var(--border)' }} 
-                  placeholder="Search address..." 
+                  placeholder="Enter specific ward or street address..." 
                 />
               </div>
             </div>
-            <div style={{ height: '480px', borderRadius: '16px', overflow: 'hidden', position: 'relative' }}>
-               <img src="https://images.unsplash.com/photo-1526778548025-fa2f459cd5ce?q=80&w=600" alt="Map" style={{ width:'100%', height:'100%', objectFit:'cover'}} />
-               <MapPin size={64} color="var(--primary)" style={{ position:'absolute', left:'50%', top:'50%', transform:'translate(-50%, -50%)' }} />
-               <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)' }}>
-                 <div className="glass" style={{ padding: '16px', borderRadius: '12px', writingMode: 'vertical-lr', fontSize: '11px', fontWeight: 800 }}>
-                    CLICK AND DRAG PIN
-                 </div>
+            <div style={{ height: '480px', borderRadius: '16px', overflow: 'hidden', position: 'relative', border: '1px solid var(--border)' }}>
+               <MapContainer center={MUMBAI_CENTER} zoom={13} style={{ height: '100%', width: '100%' }}>
+                  <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
+                  <LocationPicker onLocationSelect={(latlng) => setFormData({...formData, location: latlng})} />
+                  <Marker position={[formData.location.lat, formData.location.lng]} icon={defaultIcon} />
+               </MapContainer>
+               <div style={{ position: 'absolute', right: '16px', top: '16px', zIndex: 1000 }}>
+                  <div className="glass" style={{ padding: '12px 16px', borderRadius: '12px', fontSize: '11px', fontWeight: 800, color: 'var(--primary)' }}>
+                     CLICK MAP TO SET PIN
+                  </div>
                </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Bottom Action Bar */}
       <div className="card" style={{ marginTop: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F8F9FB' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--text-muted)' }}>
           <div style={{ width: '24px', height: '24px', background: 'var(--safe)', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <CheckCircle size={14} />
           </div>
-          <span style={{ fontSize: '14px' }}>Your report will be reviewed by the District 4 technical team within 24 hours.</span>
+          <span style={{ fontSize: '14px' }}>Data will be processed into the city's maintenance grid within 15 minutes.</span>
         </div>
-        <button className="btn-primary" onClick={handleSubmit} style={{ padding: '16px 40px', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {loading ? 'Submitting...' : 'Submit Report'} <ArrowRight size={20} />
+        <button 
+          className="btn-primary" 
+          onClick={handleSubmit} 
+          disabled={loading}
+          style={{ padding: '16px 48px', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}
+        >
+          {loading ? 'Processing...' : <><ArrowRight size={20} /> Finalize Report</>}
         </button>
       </div>
     </div>

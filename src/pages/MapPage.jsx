@@ -27,50 +27,7 @@ const MUMBAI_BOUNDS = {
   maxLng: 72.99
 };
 
-const MUMBAI_DEMO_REPORTS = [
-  {
-    id: 'bmc-pothole-9021',
-    type: 'Critical Pothole Cluster',
-    category: 'Critical',
-    address: 'Dr. Annie Besant Road, Worli',
-    location: { lat: 19.0178, lng: 72.8162 },
-    description: 'Multiple deep potholes reported along the BMC corridor near Worli Naka. Fast-moving traffic and bus movement make immediate patching necessary.',
-    color: '#dc2626',
-    score: 84,
-    status: 'Action Required',
-    impactLabel: '8.4/10',
-    assets: ['Primary Road Grid W-4', 'Adjacent Drainage Zone A2'],
-    image: 'https://images.unsplash.com/photo-1515162305285-0293e4767cc2?q=80&w=900&auto=format&fit=crop'
-  },
-  {
-    id: 'bmc-drain-4110',
-    type: 'Drainage Overflow Risk',
-    category: 'High Risk',
-    address: 'LBS Marg, Kurla West',
-    location: { lat: 19.0726, lng: 72.8777 },
-    description: 'Recurring drainage choke point flagged before monsoon runoff. Water logging risk is elevated around the bus corridor and pedestrian access lane.',
-    color: '#d97706',
-    score: 71,
-    status: 'Crew Review',
-    impactLabel: '7.1/10',
-    assets: ['Stormwater Line K-2', 'Pedestrian Crossing P7'],
-    image: 'https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?q=80&w=900&auto=format&fit=crop'
-  },
-  {
-    id: 'bmc-light-2380',
-    type: 'Streetlight Failure Pocket',
-    category: 'Medium Risk',
-    address: 'SV Road, Andheri West',
-    location: { lat: 19.1364, lng: 72.8276 },
-    description: 'Three consecutive streetlights remain offline near a busy junction, reducing nighttime visibility and increasing safety complaints from residents.',
-    color: '#16a34a',
-    score: 52,
-    status: 'Scheduled',
-    impactLabel: '5.2/10',
-    assets: ['Lighting Circuit A-9', 'Traffic Junction Node 11'],
-    image: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=80&w=900&auto=format&fit=crop'
-  }
-];
+// Demo reports removed in favor of live Firebase data
 
 const isInMumbaiRegion = (location) => {
   if (!location || typeof location.lat !== 'number' || typeof location.lng !== 'number') {
@@ -138,8 +95,7 @@ const MapPage = () => {
 
   const baseReports = useMemo(() => {
     const normalizedReports = reports.map(normalizeReport);
-    const mumbaiReports = normalizedReports.filter((report) => isInMumbaiRegion(report.location));
-    return mumbaiReports.length > 0 ? mumbaiReports : MUMBAI_DEMO_REPORTS.map(processReport);
+    return normalizedReports.filter((report) => isInMumbaiRegion(report.location));
   }, [reports]);
 
   const displayReports = useMemo(() => {

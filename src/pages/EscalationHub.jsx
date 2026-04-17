@@ -15,7 +15,7 @@ import {
   Zap,
   Hammer
 } from 'lucide-react';
-import { collection, onSnapshot, query, where, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, orderBy, serverTimestamp } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { processReport } from '../services/dataSyncService';
 
@@ -27,12 +27,17 @@ const EscalationHub = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [showReportModal, setShowReportModal] = useState(false);
 
-  // Mock NGOs for recognition
-  const topNGOs = [
-    { name: 'Mumbai Foundation', tasks: 12, rating: 4.8 },
-    { name: 'City Care NGO', tasks: 8, rating: 4.9 },
-    { name: 'Green Path Services', tasks: 5, rating: 4.7 }
-  ];
+  const filteredEscalations = useMemo(() => {
+    let list = escalations.filter(e => e.isDelayed || e.status === 'Escalated');
+    if (selectedCategory !== 'All') {
+      list = list.filter(e => e.category === selectedCategory);
+    }
+    return list;
+  }, [escalations, selectedCategory]);
+
+  const totalEscalationCost = useMemo(() => {
+    return filteredEscalations.reduce((acc, curr) => acc + (curr.aiData?.estimatedCost || 0), 0);
+  }, [filteredEscalations]);
 
   useEffect(() => {
     // Standard query for reports
@@ -71,17 +76,9 @@ const EscalationHub = () => {
     }
   };
 
-  const filteredEscalations = useMemo(() => {
-    let list = escalations.filter(e => e.isDelayed || e.status === 'Escalated');
-    if (selectedCategory !== 'All') {
-      list = list.filter(e => e.category === selectedCategory);
-    }
-    return list;
-  }, [escalations, selectedCategory]);
 
   return (
     <div style={pageContainerStyle}>
-      {/* Header Section */}
       <section style={headerSectionStyle}>
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -110,18 +107,15 @@ const EscalationHub = () => {
           </div>
         </motion.div>
 
-        {/* Stats Summary */}
         <div style={statsContainerStyle}>
           <StatCard label="Delayed Issues" value={filteredEscalations.length} color="#ef4444" />
           <StatCard label="Tasks Accepted" value={escalations.filter(e => e.acceptedBy).length} color="#10b981" />
-          <StatCard label="Estimated City Cost" value="₹1.2Cr" color="#3b82f6" />
+          <StatCard label="Estimated City Cost" value={`₹${(totalEscalationCost / 100000).toFixed(1)}L`} color="#3b82f6" />
         </div>
       </section>
 
-      {/* Main Content */}
       <div style={contentGridStyle}>
-        {/* Left Side: Escalation Feed */}
-        <div style={feedContainerStyle}>
+        <div style={{ ...feedContainerStyle, gridColumn: 'span 2' }}>
           <div style={filterRowStyle}>
             <h2 style={sectionTitleStyle}>Delayed Complaints Feed</h2>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -162,44 +156,6 @@ const EscalationHub = () => {
               </AnimatePresence>
             </div>
           )}
-        </div>
-
-        {/* Right Side: NGO Leaderboard & Recognition */}
-        <div style={sideContainerStyle}>
-          <div style={recognitionCardStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-              <Award color="var(--primary)" size={24} />
-              <h3 style={{ margin: 0 }}>Top Organizations</h3>
-            </div>
-            <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '20px' }}>
-              Recognizing partners taking action for a better Mumbai.
-            </p>
-            <div style={{ display: 'grid', gap: '12px' }}>
-              {topNGOs.map((ngo, idx) => (
-                <div key={idx} style={ngoRowStyle}>
-                  <div style={{ fontWeight: 600 }}>{ngo.name}</div>
-                  <div style={{ fontSize: '12px', color: 'var(--primary)' }}>{ngo.tasks} Tasks Completed</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div style={transparencyCardStyle}>
-            <h3>Transparency Report</h3>
-            <p style={{ fontSize: '14px', lineHeight: 1.5, color: '#475569' }}>
-              Daily system audit of delayed civic services. Live data synchronization with BMC Command Center.
-            </p>
-            <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '16px', marginTop: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ fontSize: '14px' }}>Last System Crawl</span>
-                <span style={{ fontSize: '14px', fontWeight: 600 }}>2 mins ago</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '14px' }}>Accuracy Rate</span>
-                <span style={{ fontSize: '14px', fontWeight: 600 }}>99.8%</span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -297,7 +253,7 @@ const EscalationCard = ({ item, onAccept }) => {
         >
           <div style={{ fontWeight: 700, marginBottom: '8px', fontSize: '14px' }}>AI-Generated Work Plan:</div>
           <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '14px', lineHeight: 1.6 }}>
-            {item.aiData.requiredWork.map((step, i) => (
+            {item.aiData?.requiredWork?.map((step, i) => (
               <li key={i}>{step}</li>
             ))}
           </ul>
