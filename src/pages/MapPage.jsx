@@ -74,6 +74,9 @@ const MapFocus = ({ issue }) => {
   return null;
 };
 
+import MarkerClusterGroup from 'react-leaflet-cluster';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
+
 const MapPage = () => {
   const [reports, setReports] = useState([]);
   const [selectedIssueId, setSelectedIssueId] = useState(null);
@@ -136,7 +139,16 @@ const MapPage = () => {
     <div style={{ height: 'calc(100vh - 72px)', marginTop: '72px', display: 'flex', background: '#f6f0e8' }}>
       <aside style={{ width: '320px', padding: '32px', borderRight: '1px solid var(--border)', background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(12px)', display: 'flex', flexDirection: 'column', gap: '32px', zIndex: 1001 }}>
         <div>
-          <h4 style={sidebarHeadingStyle}>Issue Type</h4>
+          <h4 style={sidebarHeadingStyle}>Risk Priority</h4>
+          <div style={{ display: 'grid', gap: '8px', marginTop: '16px' }}>
+            <SeverityPill label="Critical / Degrading" color="#fee2e2" textColor="#b91c1c" icon="!" />
+            <SeverityPill label="Watch Status" color="#fef3c7" textColor="#92400e" icon="^" />
+            <SeverityPill label="Stable Asset" color="#dcfce7" textColor="#15803d" icon="+" />
+          </div>
+        </div>
+
+        <div>
+          <h4 style={sidebarHeadingStyle}>Intelligence Filters</h4>
           <div style={{ display: 'grid', gap: '12px', marginTop: '16px' }}>
             <FilterCheckbox
               label="Potholes"
@@ -156,25 +168,11 @@ const MapPage = () => {
           </div>
         </div>
 
-        <div>
-          <h4 style={sidebarHeadingStyle}>Severity</h4>
-          <div style={{ display: 'grid', gap: '8px', marginTop: '16px' }}>
-            <SeverityPill label="High / Critical" color="#fee2e2" textColor="#b91c1c" icon="!" />
-            <SeverityPill label="Medium Risk" color="#fef3c7" textColor="#92400e" icon="^" />
-            <SeverityPill label="Low Priority" color="#dcfce7" textColor="#15803d" icon="+" />
-          </div>
-        </div>
-
         <div className="card" style={{ padding: '18px 20px', display: 'grid', gap: '12px' }}>
-          <div style={{ ...sidebarHeadingStyle, color: 'var(--primary)' }}>BMC Mumbai Demo Layer</div>
-          <div style={{ fontSize: '14px', lineHeight: 1.6, color: 'var(--text-muted)' }}>
-            The map now starts in Mumbai. Until ward-level live reports arrive here, example incidents are shown around the BMC service area.
+          <div style={{ ...sidebarHeadingStyle, color: 'var(--primary)' }}>Predictive Node Feed</div>
+          <div style={{ fontSize: '13px', lineHeight: 1.6, color: 'var(--text-muted)' }}>
+            Real-time infrastructure intelligence aggregated from citizen reports and environmental context.
           </div>
-          {!displayReports.length && (
-            <div style={{ fontSize: '12px', color: '#b45309', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '12px', padding: '10px 12px' }}>
-              No issues match the selected filters right now.
-            </div>
-          )}
           <div style={{ display: 'grid', gap: '10px' }}>
             {displayReports.slice(0, 3).map((report) => (
               <button
@@ -194,7 +192,7 @@ const MapPage = () => {
                 <IssueIcon issueType={report.type} color={report.color} />
                 <div>
                   <div style={{ fontSize: '13px', fontWeight: 700 }}>{report.type}</div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{report.address}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{report.category || 'Stable'}</div>
                 </div>
               </button>
             ))}
@@ -202,8 +200,8 @@ const MapPage = () => {
         </div>
 
         <div style={{ marginTop: 'auto' }}>
-          <div className="pill pill-blue" style={{ width: '100%', padding: '12px', justifyContent: 'center', fontSize: '13px' }}>
-            <Activity size={14} /> System Health: 98.4%
+          <div className="pill pill-blue" style={{ width: '100%', padding: '12px', justifyContent: 'center', fontSize: '12px', fontWeight: 800 }}>
+            PREDICTIVE_SYNC_NOMINAL
           </div>
         </div>
       </aside>
@@ -216,25 +214,27 @@ const MapPage = () => {
             attribution="&copy; CARTO"
           />
 
-          {displayReports.map((report) => (
-            <React.Fragment key={report.id}>
-              <Circle
-                center={[report.location.lat, report.location.lng]}
-                radius={report.isDelayed ? 450 : 300}
-                pathOptions={{
-                  fillColor: report.color,
-                  color: report.color,
-                  fillOpacity: report.isDelayed ? 0.4 : 0.2,
-                  weight: report.isDelayed ? 2 : 1,
-                  dashArray: report.isDelayed ? [5, 5] : null
-                }}
-              />
-              <Marker
-                position={[report.location.lat, report.location.lng]}
-                eventHandlers={{ click: () => setSelectedIssueId(report.id) }}
-              />
-            </React.Fragment>
-          ))}
+          <MarkerClusterGroup chunkedLoading>
+            {displayReports.map((report) => (
+              <React.Fragment key={report.id}>
+                <Circle
+                  center={[report.location.lat, report.location.lng]}
+                  radius={report.score > 80 ? 450 : 300}
+                  pathOptions={{
+                    fillColor: report.color,
+                    color: report.color,
+                    fillOpacity: report.score > 80 ? 0.4 : 0.2,
+                    weight: report.score > 80 ? 2 : 1,
+                    dashArray: report.score > 80 ? [5, 5] : null
+                  }}
+                />
+                <Marker
+                  position={[report.location.lat, report.location.lng]}
+                  eventHandlers={{ click: () => setSelectedIssueId(report.id) }}
+                />
+              </React.Fragment>
+            ))}
+          </MarkerClusterGroup>
         </MapContainer>
 
         {selectedIssue && (

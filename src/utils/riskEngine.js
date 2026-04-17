@@ -1,62 +1,68 @@
 /**
- * InfraMind AI - Risk Scoring Engine
- * Calculates a Risk Score (0-100) based on multiple infrastructure factors.
+ * InfraMind AI - Advanced Risk Scoring Engine (v2.0)
+ * Calculates a Predictive Risk Score (0-100) based on city-scale variables.
  */
 
 export const calculateRiskScore = (data) => {
   const {
-    severity = 1,      // 1-4 (Low, Med, High, Critical)
-    frequency = 1,     // Number of similar reports in vicinity
+    severity = 1,       // 1-4 (Low, Med, High, Critical)
+    frequency = 1,      // Reports in same location
     isSensitive = false, // Proximity to schools/hospitals
-    yearsSinceLastRepair = 1,
-    weatherFactor = 1.0  // 1.0 to 1.5 multiplier based on conditions
+    userTrust = 50,     // 0-100 User reputation
+    trendFactor = 1.0,  // Velocity of new reports (1.0 - 2.0)
+    weatherFactor = 1.0 // Environmental pressure
   } = data;
 
-  // Weight distribution
+  // Weight distribution (Targeting Corruption Resilience & Prediction)
   const weights = {
-    severity: 40,
-    frequency: 20,
-    sensitivity: 20,
-    age: 20
+    severity: 0.35,      // Visual/Technical Damage
+    context: 0.20,       // Sensitive Locations
+    credibility: 0.15,   // User Trust influence
+    velocity: 0.30       // Trend/Urgency
   };
 
-  // 1. Severity Score (normalized 0-1)
-  const severityScore = (severity / 4);
+  // 1. Severity Score (normalized 1-4 to 0-1)
+  const sScore = (severity - 1) / 3;
 
-  // 2. Frequency Score (capped at 10 reports for max score)
-  const frequencyScore = Math.min(frequency / 10, 1);
+  // 2. Context Score (Sensitive location bonus)
+  const cScore = isSensitive ? 1.0 : 0.2;
 
-  // 3. Sensitivity Score
-  const sensitivityScore = isSensitive ? 1 : 0.2;
+  // 3. Credibility Score (Normalizing trust score)
+  const trustScore = userTrust / 100;
 
-  // 4. Age Score (capped at 5 years since repair)
-  const ageScore = Math.min(yearsSinceLastRepair / 5, 1);
+  // 4. Velocity/Trend Score
+  const vScore = Math.min((frequency / 5) * trendFactor, 1.5); // Can exceed 1 for urgency
 
-  // Calculate Base Score
-  let baseScore = (
-    (severityScore * weights.severity) +
-    (frequencyScore * weights.frequency) +
-    (sensitivityScore * weights.sensitivity) +
-    (ageScore * weights.age)
-  );
+  // Calculate Weighted Component Base
+  let totalScore = (
+    (sScore * weights.severity) +
+    (cScore * weights.context) +
+    (trustScore * weights.credibility) +
+    (vScore * weights.velocity)
+  ) * 100;
 
-  // Apply Weather Multiplier (simulating environmental pressure)
-  baseScore *= weatherFactor;
+  // Apply Environmental Multiplier
+  totalScore *= weatherFactor;
 
   // Clamp 0-100
-  const finalScore = Math.min(Math.max(Math.round(baseScore), 0), 100);
+  const finalScore = Math.min(Math.max(Math.round(totalScore), 0), 100);
 
   return {
     score: finalScore,
     category: getRiskCategory(finalScore),
-    color: getRiskColor(finalScore)
+    color: getRiskColor(finalScore),
+    factors: {
+      isHighVelocity: trendFactor > 1.3,
+      isUnverified: userTrust < 30,
+      environmentalPressure: weatherFactor > 1.2
+    }
   };
 };
 
 export const getRiskCategory = (score) => {
-  if (score < 25) return 'Safe';
-  if (score < 50) return 'Watch';
-  if (score < 75) return 'High Risk';
+  if (score < 30) return 'Stable';
+  if (score < 55) return 'Watch';
+  if (score < 80) return 'Degrading';
   return 'Critical';
 };
 

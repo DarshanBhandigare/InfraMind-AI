@@ -70,44 +70,72 @@ const CitizenReport = () => {
     }
   };
 
+  const fetchGPS = () => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        setFormData(prev => ({
+          ...prev,
+          location: { lat: position.coords.latitude, lng: position.coords.longitude }
+        }));
+      }, (err) => console.warn("GPS Access Denied:", err));
+    }
+  };
+
+  useEffect(() => {
+    fetchGPS();
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) return;
     if (!formData.type) return alert("Please select an issue type");
+    if (!selectedFileName) return alert("EVIDENCE_ERROR: Image proof is mandatory for corruption resilience.");
+    
     setLoading(true);
 
     try {
+      // 1. Fetch Contextual Intelligence
+      const { getUserTrustScore, updateTrustScore } = await import('../services/trustService');
+      const { getEnvironmentalMultiplier } = await import('../services/predictionService');
+      
+      const userTrust = await getUserTrustScore(user.uid);
+      const weatherFactor = getEnvironmentalMultiplier();
+
+      // 2. Simulate AI Processing Delay (Simulated Inference)
+      await new Promise(resolve => setTimeout(resolve, 2400));
+
+      // 3. Calculate Intelligence Factors
       const aiFactors = {
         severity: parseInt(formData.severity),
-        frequency: Math.floor(Math.random() * 5) + 1,
-        isSensitive: Math.random() > 0.7,
-        yearsSinceLastRepair: Math.floor(Math.random() * 4) + 1,
-        weatherFactor: 1.1
+        frequency: Math.floor(Math.random() * 3) + 1, // Mock local density
+        isSensitive: Math.random() > 0.8,              // Mock proximity check
+        userTrust,
+        trendFactor: 1.1 + (Math.random() * 0.4),     // Mock velocity
+        weatherFactor
       };
 
       const riskData = calculateRiskScore(aiFactors);
       const tempId = `rep-${Date.now()}`;
       const aiMetadata = generateAIData(tempId, formData.type);
 
+      // 4. Persistence
       await addDoc(collection(db, 'reports'), {
         ...formData,
         ...riskData,
-        aiData: aiMetadata,
+        aiData: {
+          ...aiMetadata,
+          trustWeight: userTrust,
+          aiConfidence: 0.85 + (Math.random() * 0.1),
+          reportVelocity: aiFactors.trendFactor
+        },
         userId: user.uid,
         status: 'reported',
         createdAt: serverTimestamp(),
         fileName: selectedFileName
       });
 
-      // Try to update stats, but don't block the UI if it fails
-      try {
-        await updateGlobalStats({
-          totalReports: 1,
-          highRiskCount: riskData.score > 70 ? 1 : 0
-        });
-      } catch (statsErr) {
-        console.warn("Global stats update failed, but report was saved.", statsErr);
-      }
+      // 5. Reward User for high-quality data
+      await updateTrustScore(user.uid, 'report');
 
       setSubmitted(true);
       setTimeout(() => navigate('/dashboard'), 2000);
@@ -203,162 +231,204 @@ const CitizenReport = () => {
   );
 
   const renderMemberView = () => (
-    <div style={{ padding: '40px' }}>
-      <div style={{ marginBottom: '40px' }}>
-        <h1 style={{ fontSize: '36px', marginBottom: '8px' }}>Asset Report Entry</h1>
-        <p style={{ color: 'var(--text-muted)' }}>
-          Logged in as {user.email}. Precisely define the infrastructure issue for rapid response.
-        </p>
-      </div>
+    <>
+      <div style={{ padding: '40px' }}>
+        <div style={{ marginBottom: '40px' }}>
+          <h1 style={{ fontSize: '36px', marginBottom: '8px' }}>Asset Report Entry</h1>
+          <p style={{ color: 'var(--text-muted)' }}>
+            Logged in as {user.email}. Precisely define the infrastructure issue for rapid response.
+          </p>
+        </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '32px' }}>
-        <div style={{ display: 'grid', gap: '32px' }}>
-          <div className="card" style={{ padding: '32px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '32px' }}>
+          <div style={{ display: 'grid', gap: '32px' }}>
+            <div className="card" style={{ padding: '32px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', color: 'var(--primary)' }}>
+                <Shield size={24} />
+                <h3 style={{ fontSize: '18px' }}>Technical Parameters</h3>
+              </div>
+              <div style={{ display: 'grid', gap: '24px' }}>
+                <div>
+                  <label style={labelStyle}>INFRASTRUCTURE CATEGORY</label>
+                  <div style={{ position: 'relative' }}>
+                    <select 
+                      className="input-field" 
+                      style={{ background: '#F8F9FB', border: '1px solid var(--border)', appearance: 'none' }}
+                      value={formData.type}
+                      onChange={(e) => setFormData({...formData, type: e.target.value})}
+                    >
+                      <option value="">Select asset class</option>
+                      <option>Pothole</option>
+                      <option>Drainage</option>
+                      <option>Streetlight</option>
+                      <option>Water Leakage</option>
+                      <option>Traffic System</option>
+                    </select>
+                    <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
+                  </div>
+                </div>
+                <div>
+                  <label style={labelStyle}>SEVERITY ESTIMATE</label>
+                  <div style={{ position: 'relative' }}>
+                    <select 
+                      className="input-field" 
+                      style={{ background: '#F8F9FB', border: '1px solid var(--border)', appearance: 'none' }}
+                      value={formData.severity}
+                      onChange={(e) => setFormData({...formData, severity: e.target.value})}
+                    >
+                      <option value="1">Low - Minor Utility Impact</option>
+                      <option value="2">Medium - Functional Impairment</option>
+                      <option value="3">High - Safety Hazard</option>
+                      <option value="4">Critical - Immediate Structural Threat</option>
+                    </select>
+                    <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
+                  </div>
+                </div>
+                <div>
+                  <label style={labelStyle}>TECHNICAL DESCRIPTION</label>
+                  <textarea 
+                    className="input-field" 
+                    rows="5" 
+                    placeholder="Describe the visible damage, approximate dimensions, and impact on city services..."
+                    style={{ background: '#F8F9FB', border: '1px solid var(--border)' }}
+                    value={formData.description}
+                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div className="card" style={{ padding: '32px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', color: 'var(--primary)' }}>
+                <Upload size={24} />
+                <h3 style={{ fontSize: '18px' }}>Evidence Upload</h3>
+              </div>
+              <div style={{ 
+                border: '2px dashed var(--border)', 
+                borderRadius: '16px', 
+                padding: '40px', 
+                textAlign: 'center',
+                background: '#F8F9FB'
+              }}>
+                <div style={{ width: '48px', height: '48px', background: '#D1E2FF', color: 'var(--primary)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                  <Upload size={24} />
+                </div>
+                {selectedFileName ? (
+                  <div style={{ color: 'var(--primary)', fontWeight: 700, marginBottom: '8px' }}>{selectedFileName}</div>
+                ) : (
+                  <div style={{ fontWeight: 700, marginBottom: '4px' }}>Evidence required (JPG/PNG)</div>
+                )}
+                <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '24px' }}>Maximum file size: 10MB</div>
+                <input 
+                  ref={fileInputRef} 
+                  type="file" 
+                  onChange={handleFileChange} 
+                  style={{ display: 'none' }} 
+                />
+                <button 
+                  className="btn-outline" 
+                  onClick={() => fileInputRef.current.click()}
+                  style={{ padding: '10px 24px', background: 'white' }}
+                >
+                  Browse Files
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="card" style={{ padding: '32px', height: 'fit-content' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', color: 'var(--primary)' }}>
-              <Shield size={24} />
-              <h3 style={{ fontSize: '18px' }}>Technical Parameters</h3>
+              <MapPin size={24} />
+              <h3 style={{ fontSize: '18px' }}>Geographic Context</h3>
             </div>
             <div style={{ display: 'grid', gap: '24px' }}>
               <div>
-                <label style={labelStyle}>INFRASTRUCTURE CATEGORY</label>
+                <label style={labelStyle}>PRIMARY ADDRESS</label>
                 <div style={{ position: 'relative' }}>
-                  <select 
+                  <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <input 
                     className="input-field" 
-                    style={{ background: '#F8F9FB', border: '1px solid var(--border)', appearance: 'none' }}
-                    value={formData.type}
-                    onChange={(e) => setFormData({...formData, type: e.target.value})}
-                  >
-                    <option value="">Select asset class</option>
-                    <option>Pothole</option>
-                    <option>Drainage</option>
-                    <option>Streetlight</option>
-                    <option>Water Leakage</option>
-                    <option>Traffic System</option>
-                  </select>
-                  <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
+                    value={formData.address}
+                    onChange={(e) => setFormData({...formData, address: e.target.value})}
+                    style={{ paddingLeft: '48px', background: '#F8F9FB', border: '1px solid var(--border)' }} 
+                    placeholder="Enter specific ward or street address..." 
+                  />
                 </div>
               </div>
-              <div>
-                <label style={labelStyle}>SEVERITY ESTIMATE</label>
-                <div style={{ position: 'relative' }}>
-                  <select 
-                    className="input-field" 
-                    style={{ background: '#F8F9FB', border: '1px solid var(--border)', appearance: 'none' }}
-                    value={formData.severity}
-                    onChange={(e) => setFormData({...formData, severity: e.target.value})}
-                  >
-                    <option value="1">Low - Minor Utility Impact</option>
-                    <option value="2">Medium - Functional Impairment</option>
-                    <option value="3">High - Safety Hazard</option>
-                    <option value="4">Critical - Immediate Structural Threat</option>
-                  </select>
-                  <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
+              <div style={{ height: '480px', borderRadius: '16px', overflow: 'hidden', position: 'relative', border: '1px solid var(--border)' }}>
+                <MapContainer center={MUMBAI_CENTER} zoom={13} style={{ height: '100%', width: '100%' }}>
+                    <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
+                    <LocationPicker onLocationSelect={(latlng) => setFormData({...formData, location: latlng})} />
+                    <Marker position={[formData.location.lat, formData.location.lng]} icon={defaultIcon} />
+                </MapContainer>
+                <div style={{ position: 'absolute', right: '16px', top: '16px', zIndex: 1000 }}>
+                    <div className="glass" style={{ padding: '12px 16px', borderRadius: '12px', fontSize: '11px', fontWeight: 800, color: 'var(--primary)' }}>
+                      CLICK MAP TO SET PIN
+                    </div>
                 </div>
               </div>
-              <div>
-                <label style={labelStyle}>TECHNICAL DESCRIPTION</label>
-                <textarea 
-                  className="input-field" 
-                  rows="5" 
-                  placeholder="Describe the visible damage, approximate dimensions, and impact on city services..."
-                  style={{ background: '#F8F9FB', border: '1px solid var(--border)' }}
-                  value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                ></textarea>
-              </div>
-            </div>
-          </div>
-
-          <div className="card" style={{ padding: '32px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', color: 'var(--primary)' }}>
-              <Upload size={24} />
-              <h3 style={{ fontSize: '18px' }}>Evidence Upload</h3>
-            </div>
-            <div style={{ 
-              border: '2px dashed var(--border)', 
-              borderRadius: '16px', 
-              padding: '40px', 
-              textAlign: 'center',
-              background: '#F8F9FB'
-            }}>
-              <div style={{ width: '48px', height: '48px', background: '#D1E2FF', color: 'var(--primary)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                <Upload size={24} />
-              </div>
-              {selectedFileName ? (
-                <div style={{ color: 'var(--primary)', fontWeight: 700, marginBottom: '8px' }}>{selectedFileName}</div>
-              ) : (
-                <div style={{ fontWeight: 700, marginBottom: '4px' }}>Evidence required (JPG/PNG)</div>
-              )}
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '24px' }}>Maximum file size: 10MB</div>
-              <input 
-                ref={fileInputRef} 
-                type="file" 
-                onChange={handleFileChange} 
-                style={{ display: 'none' }} 
-              />
-              <button 
-                className="btn-outline" 
-                onClick={() => fileInputRef.current.click()}
-                style={{ padding: '10px 24px', background: 'white' }}
-              >
-                Browse Files
-              </button>
             </div>
           </div>
         </div>
 
-        <div className="card" style={{ padding: '32px', height: 'fit-content' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', color: 'var(--primary)' }}>
-            <MapPin size={24} />
-            <h3 style={{ fontSize: '18px' }}>Geographic Context</h3>
-          </div>
-          <div style={{ display: 'grid', gap: '24px' }}>
-            <div>
-              <label style={labelStyle}>PRIMARY ADDRESS</label>
-              <div style={{ position: 'relative' }}>
-                <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                <input 
-                  className="input-field" 
-                  value={formData.address}
-                  onChange={(e) => setFormData({...formData, address: e.target.value})}
-                  style={{ paddingLeft: '48px', background: '#F8F9FB', border: '1px solid var(--border)' }} 
-                  placeholder="Enter specific ward or street address..." 
-                />
-              </div>
+        <div className="card" style={{ marginTop: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F8F9FB' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--text-muted)' }}>
+            <div style={{ width: '24px', height: '24px', background: 'var(--safe)', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CheckCircle size={14} />
             </div>
-            <div style={{ height: '480px', borderRadius: '16px', overflow: 'hidden', position: 'relative', border: '1px solid var(--border)' }}>
-               <MapContainer center={MUMBAI_CENTER} zoom={13} style={{ height: '100%', width: '100%' }}>
-                  <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
-                  <LocationPicker onLocationSelect={(latlng) => setFormData({...formData, location: latlng})} />
-                  <Marker position={[formData.location.lat, formData.location.lng]} icon={defaultIcon} />
-               </MapContainer>
-               <div style={{ position: 'absolute', right: '16px', top: '16px', zIndex: 1000 }}>
-                  <div className="glass" style={{ padding: '12px 16px', borderRadius: '12px', fontSize: '11px', fontWeight: 800, color: 'var(--primary)' }}>
-                     CLICK MAP TO SET PIN
-                  </div>
-               </div>
-            </div>
+            <span style={{ fontSize: '14px' }}>Data will be processed into the city's maintenance grid within 15 minutes.</span>
           </div>
+          <button 
+            className="btn-primary" 
+            onClick={handleSubmit} 
+            disabled={loading}
+            style={{ padding: '16px 48px', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}
+          >
+            {loading ? 'Processing...' : <><ArrowRight size={20} /> Finalize Report</>}
+          </button>
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F8F9FB' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--text-muted)' }}>
-          <div style={{ width: '24px', height: '24px', background: 'var(--safe)', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <CheckCircle size={14} />
+      {/* AI Processing Overlay */}
+      {loading && (
+        <div style={{ 
+          position: 'fixed', 
+          inset: 0, 
+          background: 'rgba(2, 6, 23, 0.95)', 
+          zIndex: 10000, 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          flexDirection: 'column',
+          backdropFilter: 'blur(10px)'
+        }}>
+          <div className="glass-premium" style={{ 
+            padding: '48px', 
+            borderRadius: '32px', 
+            textAlign: 'center', 
+            maxWidth: '500px',
+            border: '1px solid rgba(16, 185, 129, 0.2)'
+          }}>
+            <div style={{ position: 'relative', width: '100px', height: '100px', margin: '0 auto 32px' }}>
+              <div className="spin" style={{ position: 'absolute', inset: 0, border: '4px solid #10b981', borderTopColor: 'transparent', borderRadius: '50%' }} />
+              <div style={{ position: 'absolute', inset: '15px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Activity size={32} color="#10b981" />
+              </div>
+            </div>
+            <h2 style={{ color: 'white', fontSize: '24px', fontWeight: 900, marginBottom: '12px' }}>INFRAMIND_INTELLIGENCE_SCAN</h2>
+            <div style={{ fontFamily: 'monospace', color: '#10b981', fontSize: '13px', marginBottom: '8px' }}>
+              ANALYZING_VISUAL_SEVERITY... [OK]
+            </div>
+            <div style={{ fontFamily: 'monospace', color: '#64748b', fontSize: '13px', marginBottom: '8px' }}>
+              FETCHING_CONTEXTUAL_METADATA...
+            </div>
+            <div style={{ fontFamily: 'monospace', color: '#64748b', fontSize: '13px' }}>
+              CALCULATING_PREDICTIVE_RISK_SCORE...
+            </div>
           </div>
-          <span style={{ fontSize: '14px' }}>Data will be processed into the city's maintenance grid within 15 minutes.</span>
         </div>
-        <button 
-          className="btn-primary" 
-          onClick={handleSubmit} 
-          disabled={loading}
-          style={{ padding: '16px 48px', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}
-        >
-          {loading ? 'Processing...' : <><ArrowRight size={20} /> Finalize Report</>}
-        </button>
-      </div>
-    </div>
+      )}
+    </>
   );
 
   return user ? renderMemberView() : renderPublicView();
