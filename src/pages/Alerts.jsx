@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -289,23 +289,125 @@ const Alerts = () => {
   );
 };
 
-const AlertsPanel = ({ filter, setFilter, filteredAlerts, overviewStats }) => (
-  <>
-    <div style={topBarStyle}>
-      <div style={searchWrapStyle}>
-        <Search size={18} color="var(--text-muted)" />
-        <input
-          className="input-field"
-          placeholder="Search infrastructure..."
-          style={{ background: 'transparent', border: 'none', boxShadow: 'none', padding: 0 }}
-        />
-      </div>
+const AlertsPanel = ({ filter, setFilter, filteredAlerts, overviewStats }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchRef = useRef(null);
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
-        <Bell size={20} color="var(--text-muted)" />
-        <UserCircle2 size={28} color="var(--text-muted)" />
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+    setShowSuggestions(true);
+  };
+
+  const dynamicSuggestions = useMemo(() => {
+    const suggestions = new Set();
+    filteredAlerts.forEach(alert => {
+      if (alert.type) suggestions.add(alert.type);
+      if (alert.tag) suggestions.add(alert.tag);
+      if (alert.address) suggestions.add(alert.address.split(',')[0]);
+    });
+    if (suggestions.size < 5) {
+      ["Potholes", "Water Logging", "Traffic Signal", "Pipeline Leakage"].forEach(s => suggestions.add(s));
+    }
+    return Array.from(suggestions);
+  }, [filteredAlerts]);
+
+  const filteredSuggestions = dynamicSuggestions.filter(item => 
+    item.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const displayedAlerts = useMemo(() => {
+    if (!searchQuery) return filteredAlerts;
+    const lowerQuery = searchQuery.toLowerCase();
+    return filteredAlerts.filter(alert => 
+      (alert.type && alert.type.toLowerCase().includes(lowerQuery)) ||
+      (alert.description && alert.description.toLowerCase().includes(lowerQuery)) ||
+      (alert.address && alert.address.toLowerCase().includes(lowerQuery)) ||
+      (alert.tag && alert.tag.toLowerCase().includes(lowerQuery))
+    );
+  }, [filteredAlerts, searchQuery]);
+
+  return (
+    <>
+      <div style={topBarStyle}>
+        <div ref={searchRef} style={{ position: 'relative', zIndex: 50 }}>
+          <div style={{
+            ...searchWrapStyle, 
+            width: '420px', 
+            background: showSuggestions ? 'white' : '#e9eef6', 
+            border: showSuggestions ? '1px solid #dbe3ee' : '1px solid transparent', 
+            boxShadow: showSuggestions ? '0 8px 24px rgba(15, 23, 42, 0.08)' : 'none',
+            transition: 'all 0.2s ease'
+          }}>
+            <Search size={20} color={showSuggestions ? "var(--primary)" : "var(--text-muted)"} />
+            <input
+              className="input-field"
+              placeholder="Search alerts, areas, or status..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              onFocus={() => setShowSuggestions(true)}
+              style={{ background: 'transparent', border: 'none', boxShadow: 'none', padding: 0, width: '100%', fontSize: '15px', outline: 'none', color: '#091E42' }}
+            />
+          </div>
+          
+          <AnimatePresence>
+            {showSuggestions && searchQuery && filteredSuggestions.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  marginTop: '8px',
+                  background: 'white',
+                  borderRadius: '16px',
+                  boxShadow: '0 12px 36px rgba(15, 23, 42, 0.12)',
+                  border: '1px solid #dbe3ee',
+                  overflow: 'hidden'
+                }}
+              >
+                {filteredSuggestions.map((suggestion, index) => (
+                  <div
+                    key={index}
+                    onClick={() => {
+                      setSearchQuery(suggestion);
+                      setShowSuggestions(false);
+                    }}
+                    style={{
+                      padding: '12px 20px',
+                      cursor: 'pointer',
+                      borderBottom: index < filteredSuggestions.length - 1 ? '1px solid #f1f5f9' : 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                  >
+                    <Search size={14} color="var(--text-muted)" />
+                    <span style={{ fontSize: '14px', color: '#091E42', fontWeight: 500 }}>{suggestion}</span>
+                  </div>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
-    </div>
 
     <section style={{ marginTop: '28px', marginBottom: '34px' }}>
       <h1 style={{ fontSize: '48px', lineHeight: 1, letterSpacing: '-1px', marginBottom: '16px' }}>
@@ -347,17 +449,17 @@ const AlertsPanel = ({ filter, setFilter, filteredAlerts, overviewStats }) => (
 
     <section style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '22px', alignItems: 'start' }}>
       <AnimatePresence mode="popLayout">
-        {filteredAlerts.map((alert, index) => (
+        {displayedAlerts.map((alert, index) => (
           <AlertCard key={alert.id} alert={alert} index={index} />
         ))}
       </AnimatePresence>
     </section>
 
-    {filteredAlerts.length === 0 && (
+    {displayedAlerts.length === 0 && (
       <div className="card" style={{ marginTop: '22px', textAlign: 'center', padding: '48px 28px' }}>
         <ShieldCheck size={42} color="var(--safe)" style={{ marginBottom: '14px' }} />
-        <h3 style={{ fontSize: '28px', marginBottom: '8px' }}>No active {filter.toLowerCase()} alerts</h3>
-        <p style={{ color: 'var(--text-muted)' }}>The system is stable for this severity band right now.</p>
+        <h3 style={{ fontSize: '28px', marginBottom: '8px' }}>No matching alerts found</h3>
+        <p style={{ color: 'var(--text-muted)' }}>Try adjusting your search query or filters.</p>
       </div>
     )}
 
@@ -376,7 +478,8 @@ const AlertsPanel = ({ filter, setFilter, filteredAlerts, overviewStats }) => (
       </div>
     </section>
   </>
-);
+  );
+};
 
 const OverviewPanel = ({ overviewStats, trendData, categoryChartData, tableRows }) => (
   <>
