@@ -19,6 +19,8 @@ import { collection, onSnapshot, query, where, orderBy } from 'firebase/firestor
 import { db } from '../services/firebase';
 import { processReport } from '../services/dataSyncService';
 
+import { doc, updateDoc } from 'firebase/firestore';
+
 const EscalationHub = () => {
   const [escalations, setEscalations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,12 +55,20 @@ const EscalationHub = () => {
     return unsubscribe;
   }, []);
 
-  const handleAcceptTask = (id, orgName) => {
-    // In a real app, update Firestore
-    setEscalations(prev => prev.map(item => 
-      item.id === id ? { ...item, acceptedBy: orgName, status: 'In Progress', progress: 15 } : item
-    ));
-    alert(`${orgName} has successfully accepted the task!`);
+  const handleAcceptTask = async (id, orgName) => {
+    try {
+      const reportRef = doc(db, 'reports', id);
+      await updateDoc(reportRef, {
+        acceptedBy: orgName,
+        status: 'In Progress',
+        progress: 15, // Starting progress
+        acceptedAt: serverTimestamp()
+      });
+      alert(`${orgName} has successfully taken responsibility for this task!`);
+    } catch (err) {
+      console.error("Error accepting task:", err);
+      alert("Failed to accept task. Please try again.");
+    }
   };
 
   const filteredEscalations = useMemo(() => {

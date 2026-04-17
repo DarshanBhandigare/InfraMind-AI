@@ -24,17 +24,40 @@ import { Pie } from 'react-chartjs-2';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
+import { subscribeToStats, initializeStats } from '../services/statsService';
+
 const Dashboard = () => {
   const [reports, setReports] = useState([]);
-  const [stats, setStats] = useState({ total: 1240, high: 12, resolved: '98%' });
+  const [stats, setStats] = useState({ total: 0, high: 0, resolved: '0%' });
 
   useEffect(() => {
+    // 1. Ensure stats document exists
+    initializeStats();
+
+    // 2. Subscribe to global stats
+    const unsubscribeStats = subscribeToStats((data) => {
+      const resolvedPct = data.totalReports > 0 
+        ? Math.round((data.resolvedCount / data.totalReports) * 100) 
+        : 0;
+        
+      setStats({
+        total: data.totalReports,
+        high: data.highRiskCount,
+        resolved: `${resolvedPct}%`
+      });
+    });
+
+    // 3. Subscribe to recent reports
     const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'), limit(10));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribeReports = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => processReport({ id: doc.id, ...doc.data() }));
       setReports(data);
     });
-    return unsubscribe;
+
+    return () => {
+      unsubscribeStats();
+      unsubscribeReports();
+    };
   }, []);
 
   const chartData = {

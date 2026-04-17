@@ -18,6 +18,9 @@ import {
   Info
 } from 'lucide-react';
 
+import { updateGlobalStats } from '../services/statsService';
+import { generateAIData } from '../services/dataSyncService';
+
 const CitizenReport = () => {
   const { user } = useAuth();
   const [formData, setFormData] = useState({
@@ -47,13 +50,23 @@ const CitizenReport = () => {
       };
 
       const riskData = calculateRiskScore(aiFactors);
+      const tempId = `rep-${Date.now()}`;
+      const aiMetadata = generateAIData(tempId, formData.type);
 
+      // 1. Submit the report doc with embedded AI insights
       await addDoc(collection(db, 'reports'), {
         ...formData,
         ...riskData,
+        aiData: aiMetadata, // Persist AI data to Firebase
         userId: user.uid,
         status: 'reported',
         createdAt: serverTimestamp()
+      });
+
+      // 2. Update global statistics atomically
+      await updateGlobalStats({
+        totalReports: 1,
+        highRiskCount: riskData.score > 70 ? 1 : 0
       });
 
       setSubmitted(true);

@@ -60,8 +60,8 @@ export const processReport = (report) => {
   const isDelayed = diffDays >= 10 || report.status === 'Delayed';
   const category = report.category || CATEGORIES[Math.floor(seedRandom(id) * CATEGORIES.length)];
   
-  // Consistent AI Data
-  const aiData = generateAIData(id, category);
+  // Use stored AI data if available, otherwise generate it (legacy support)
+  const aiData = report.aiData || generateAIData(id, category);
 
   // Status mapping
   let status = report.status || 'Action Required';

@@ -27,17 +27,30 @@ import { Line } from 'react-chartjs-2';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
+import { subscribeToStats } from '../services/statsService';
+
 const AdminDashboard = () => {
   const [reports, setReports] = useState([]);
   const [activeTab, setActiveTab] = useState('overview');
+  const [globalStats, setGlobalStats] = useState({ totalReports: 0, highRiskCount: 0, resolvedCount: 0 });
 
   useEffect(() => {
+    // Listen to global stats
+    const unsubscribeStats = subscribeToStats((data) => {
+      setGlobalStats(data);
+    });
+
+    // Listen to recent reports
     const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'), limit(15));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribeReports = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setReports(data);
     });
-    return unsubscribe;
+
+    return () => {
+      unsubscribeStats();
+      unsubscribeReports();
+    };
   }, []);
 
   const lineData = {
@@ -96,10 +109,10 @@ const AdminDashboard = () => {
 
         {/* Stats Row */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px', marginBottom: '32px' }}>
-          <AdminStat label="Total Assets" value="12,482" trend="+2.4%" />
-          <AdminStat label="High Risk" value="48" trend="-12%" trendColor="#10b981" />
+          <AdminStat label="Total Assets" value={globalStats.totalReports || 0} trend="+Real-time" />
+          <AdminStat label="High Risk" value={globalStats.highRiskCount || 0} trend="Live" trendColor={globalStats.highRiskCount > 10 ? '#ef4444' : '#10b981'} />
           <AdminStat label="Active Units" value="156" trend="+8" />
-          <AdminStat label="Resolved Today" value="34" trend="100%" />
+          <AdminStat label="Resolved Today" value={globalStats.resolvedCount || 0} trend="Live" />
         </div>
 
         {/* Charts & Lists */}
