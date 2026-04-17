@@ -29,7 +29,7 @@ const Contact = () => {
   };
 
   return (
-    <div style={{ background: '#f8f9fb', minHeight: '100vh', paddingTop: 'var(--nav-height)' }}>
+    <div style={{ background: 'transparent', minHeight: '100vh', paddingTop: '100px' }}>
       {/* Hero Section */}
       <section className="container" style={{ padding: '80px 0 40px' }}>
         <h1 style={{ fontSize: '64px', fontWeight: 800, letterSpacing: '-2px', marginBottom: '16px' }}>
@@ -43,7 +43,7 @@ const Contact = () => {
       {/* Main Content Grid */}
       <section className="container" style={{ paddingBottom: '80px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '40px' }}>
-          
+
           {/* Inquiry Portal Form */}
           <div className="card" style={{ padding: '48px' }}>
             <h2 style={{ fontSize: '24px', color: 'var(--primary)', marginBottom: '32px' }}>Inquiry Portal</h2>
@@ -117,13 +117,13 @@ const Contact = () => {
           <div style={{ display: 'grid', gap: '16px' }}>
             {faqs.map((faq, index) => (
               <div key={index} style={{ borderBottom: '1px solid var(--border)' }}>
-                <button 
+                <button
                   onClick={() => toggleFaq(index)}
-                  style={{ 
-                    width: '100%', 
-                    padding: '24px 0', 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
+                  style={{
+                    width: '100%',
+                    padding: '24px 0',
+                    display: 'flex',
+                    justifyContent: 'space-between',
                     alignItems: 'center',
                     background: 'none',
                     textAlign: 'left'
@@ -139,19 +139,6 @@ const Contact = () => {
                 )}
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Image Banner */}
-      <section style={{ marginTop: '80px' }}>
-        <div className="container">
-          <div className="card" style={{ padding: 0, overflow: 'hidden', height: '400px', position: 'relative' }}>
-            <img src={commandCenter} alt="Metropolis Command Center" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            <div className="glass-effect" style={{ position: 'absolute', bottom: '24px', left: '24px', padding: '16px 24px', borderRadius: '12px' }}>
-              <h3 style={{ fontSize: '16px', margin: 0 }}>Metropolis Command Center</h3>
-              <p style={{ fontSize: '13px', margin: '4px 0 0', color: 'var(--text-muted)' }}>Live infrastructure monitoring active across all 12 municipal sectors.</p>
-            </div>
           </div>
         </div>
       </section>

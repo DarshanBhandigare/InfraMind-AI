@@ -14,6 +14,7 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
+import EscalationHub from './pages/EscalationHub';
 import DashboardLayout from './components/DashboardLayout';
 
 import { useLocation } from 'react-router-dom';
@@ -34,7 +35,7 @@ const AppLayout = ({ children }) => {
   
   // Routes that should NOT have the Sidebar (Landing/Auth/Public)
   const isPublicReport = location.pathname === '/report' && !user;
-  const publicRoutes = ['/', '/login', '/signup', '/about', '/contact', '/admin/login', '/alerts'];
+  const publicRoutes = ['/', '/login', '/signup', '/about', '/contact', '/admin/login', '/alerts', '/hub'];
   
   if (user && !publicRoutes.includes(location.pathname) && !isPublicReport) {
     return <DashboardLayout>{children}</DashboardLayout>;
@@ -67,6 +68,7 @@ function App() {
               {/* Protected Routes */}
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/alerts" element={<Alerts />} />
+              <Route path="/hub" element={<EscalationHub />} />
               <Route path="/admin/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
               
               {/* Fallback */}

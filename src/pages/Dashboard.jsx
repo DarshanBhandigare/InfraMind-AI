@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../services/firebase';
+import { processReport } from '../services/dataSyncService';
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { 
   TrendingUp, 
@@ -30,7 +31,7 @@ const Dashboard = () => {
   useEffect(() => {
     const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'), limit(10));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const data = snapshot.docs.map(doc => processReport({ id: doc.id, ...doc.data() }));
       setReports(data);
     });
     return unsubscribe;

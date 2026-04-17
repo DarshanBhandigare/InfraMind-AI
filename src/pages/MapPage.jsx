@@ -5,6 +5,7 @@ import { collection, onSnapshot } from 'firebase/firestore';
 import L from 'leaflet';
 import { Activity, AlertTriangle, CheckCircle2, Lightbulb, Share2, Waves, X } from 'lucide-react';
 import { db } from '../services/firebase';
+import { processReport } from '../services/dataSyncService';
 
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
@@ -127,7 +128,7 @@ const MapPage = () => {
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'reports'), (snapshot) => {
-      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const data = snapshot.docs.map((doc) => processReport({ id: doc.id, ...doc.data() }));
       setReports(data.filter((report) => report.location));
     });
 
@@ -137,7 +138,7 @@ const MapPage = () => {
   const baseReports = useMemo(() => {
     const normalizedReports = reports.map(normalizeReport);
     const mumbaiReports = normalizedReports.filter((report) => isInMumbaiRegion(report.location));
-    return mumbaiReports.length > 0 ? mumbaiReports : MUMBAI_DEMO_REPORTS;
+    return mumbaiReports.length > 0 ? mumbaiReports : MUMBAI_DEMO_REPORTS.map(processReport);
   }, [reports]);
 
   const displayReports = useMemo(() => {
@@ -259,12 +260,13 @@ const MapPage = () => {
             <React.Fragment key={report.id}>
               <Circle
                 center={[report.location.lat, report.location.lng]}
-                radius={300}
+                radius={report.isDelayed ? 450 : 300}
                 pathOptions={{
                   fillColor: report.color,
                   color: report.color,
-                  fillOpacity: 0.2,
-                  weight: 1
+                  fillOpacity: report.isDelayed ? 0.4 : 0.2,
+                  weight: report.isDelayed ? 2 : 1,
+                  dashArray: report.isDelayed ? [5, 5] : null
                 }}
               />
               <Marker
@@ -315,9 +317,24 @@ const MapPage = () => {
 
             <div style={{ padding: '24px' }}>
               <div style={{ ...detailLabelStyle, marginBottom: '10px' }}>Description</div>
-              <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '24px', lineHeight: 1.6 }}>
+              <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '18px', lineHeight: 1.6 }}>
                 {selectedIssue.description || 'Identified risk requiring immediate assessment and resolution strategy.'}
               </p>
+
+              {selectedIssue.isDelayed && (
+                <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '16px', padding: '16px', marginBottom: '24px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <div style={{ ...detailLabelStyle, color: '#0369a1', margin: 0 }}>AI ESTIMATED COST</div>
+                    <div style={{ fontSize: '18px', fontWeight: 800, color: '#0369a1' }}>₹{selectedIssue.aiData.estimatedCost.toLocaleString()}</div>
+                  </div>
+                  <div style={detailLabelStyle}>AI WORK PLAN</div>
+                  <ul style={{ margin: '8px 0 0', paddingLeft: '18px', fontSize: '13px', color: '#0c4a6e', lineHeight: 1.5 }}>
+                    {selectedIssue.aiData.requiredWork.map((step, i) => (
+                      <li key={i}>{step}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
                 <div style={detailBoxStyle}>

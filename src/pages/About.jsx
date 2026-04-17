@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, Brain, Download, ExternalLink, FileText, HelpCircle, Phone, Shield, Siren } from 'lucide-react';
+import { AlertTriangle, ExternalLink, Phone, Shield } from 'lucide-react';
 
 const resourceGroups = [
   {
@@ -62,82 +62,34 @@ const resourceGroups = [
     accent: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
     items: [
       {
-        label: 'Identify risk early',
-        href: 'https://www.mumbaipolice.gov.in/impcontacts',
-        meta: 'Keep emergency contacts available'
+        label: 'Flood Safety Guide',
+        href: 'https://dm.mcgm.gov.in/flood-preparedness-guidelines',
+        meta: 'What to do during floods?'
       },
       {
-        label: 'Report before escalation',
+        label: 'Emergency Protocol',
+        href: 'https://ndma.gov.in/',
+        meta: 'Safety steps for disasters'
+      },
+      {
+        label: 'Civic Awareness',
         href: 'https://www.mcgm.gov.in/',
-        meta: 'Use BMC complaint channels quickly'
-      },
-      {
-        label: 'Document location clearly',
-        href: 'https://aaplesarkar.mahaonline.gov.in/en',
-        meta: 'Useful when filing civic reports'
-      }
-    ]
-  },
-  {
-    title: 'AI Risk Insights',
-    icon: <Brain size={26} />,
-    accent: 'linear-gradient(135deg, #60a5fa, #2563eb)',
-    items: [
-      {
-        label: 'Top risk factors',
-        href: 'https://www.mcgm.gov.in/',
-        meta: 'Roads, drainage, lighting, and civic assets'
-      },
-      {
-        label: 'High-risk areas',
-        href: 'https://www.mcgm.gov.in/irj/portal/anonymous/qlCLCComp',
-        meta: 'Can later be replaced by Firebase analytics'
-      },
-      {
-        label: 'Priority escalation signals',
-        href: 'https://www.mumbaipolice.gov.in/impcontacts',
-        meta: 'Emergency response channels'
+        meta: 'Stay updated with BMC alerts'
       }
     ]
   }
 ];
 
-const secondaryResources = [
-  {
-    title: 'User Guide',
-    icon: <FileText size={28} />,
-    actions: [
-      { label: 'How to Report', href: 'https://www.mcgm.gov.in/irj/portal/anonymous/qlCLCComp' },
-      { label: 'Track Your Complaint', href: 'https://www.mcgm.gov.in/irj/portal/anonymous/qlCLCComp' }
-    ]
-  },
-  {
-    title: 'FAQs',
-    icon: <HelpCircle size={28} />,
-    actions: [
-      { label: 'Emergency Contacts', href: 'https://www.mumbaipolice.gov.in/impcontacts' },
-      { label: 'Risk Score Info', href: 'https://www.mcgm.gov.in/' }
-    ]
-  },
-  {
-    title: 'Downloads & Docs',
-    icon: <Download size={28} />,
-    actions: [
-      { label: 'BMC Portal', href: 'https://www.mcgm.gov.in/' },
-      { label: 'Govt. Services', href: 'https://aaplesarkar.mahaonline.gov.in/en' }
-    ]
-  }
-];
 
 const About = () => {
   return (
-    <div style={{ minHeight: '100vh', paddingTop: '72px', background: 'linear-gradient(180deg, #cfe5ff 0%, #eef5ff 28%, #f8fbff 100%)' }}>
+    <div style={{ minHeight: '100vh', paddingTop: '140px', background: 'linear-gradient(180deg, #cfe5ff 0%, #eef5ff 28%, #f8fbff 100%)' }}>
       <section style={{ maxWidth: '1220px', margin: '0 auto', padding: '56px 40px 72px' }}>
         <div style={{ textAlign: 'center', marginBottom: '34px' }}>
-          <h1 style={{ fontSize: '64px', marginBottom: '10px', color: '#ffffff', textShadow: '0 10px 30px rgba(37, 99, 235, 0.25)' }}>
+          <h1 style={{ fontSize: '52px', marginBottom: '10px', textShadow: '0 10px 30px rgba(37, 99, 235, 0.25)' }}>
             Resources
           </h1>
-          <p style={{ fontSize: '28px', fontWeight: 700, color: '#ffffff', textShadow: '0 8px 20px rgba(37, 99, 235, 0.22)' }}>
+          <p style={{ fontSize: '22px', fontWeight: 700, textShadow: '0 8px 20px rgba(37, 99, 235, 0.22)' }}>
             Stay Informed & Prepared
           </p>
           <p style={{ maxWidth: '860px', margin: '16px auto 0', color: '#36506f', fontSize: '16px', lineHeight: 1.7 }}>
@@ -145,12 +97,12 @@ const About = () => {
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '18px', marginBottom: '22px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '18px', marginBottom: '22px' }}>
           {resourceGroups.map((group) => (
             <article key={group.title} style={resourceCardStyle}>
               <div style={{ ...resourceHeaderStyle, background: group.accent }}>
                 <div style={resourceIconWrapStyle}>{group.icon}</div>
-                <h3 style={{ color: 'white', fontSize: '28px', lineHeight: 1.1 }}>{group.title}</h3>
+                <h3 style={{ color: 'white', fontSize: '22px', lineHeight: 1.1 }}>{group.title}</h3>
               </div>
               <div style={{ padding: '18px' }}>
                 <div style={{ display: 'grid', gap: '12px' }}>
@@ -166,7 +118,7 @@ const About = () => {
                         <ExternalLink size={15} />
                         <span>{item.label}</span>
                       </div>
-                      <div style={{ fontSize: '11px', fontWeight: 600, opacity: 0.88 }}>{item.meta}</div>
+                      <div style={{ fontSize: '10px', fontWeight: 600, opacity: 0.88 }}>{item.meta}</div>
                     </a>
                   ))}
                 </div>
@@ -175,51 +127,6 @@ const About = () => {
           ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '18px', marginBottom: '26px' }}>
-          {secondaryResources.map((resource) => (
-            <article key={resource.title} style={{ ...resourceCardStyle, display: 'grid', gridTemplateColumns: '90px 1fr', alignItems: 'center', minHeight: '188px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--primary)' }}>
-                {resource.icon}
-              </div>
-              <div style={{ padding: '22px 22px 22px 0' }}>
-                <h3 style={{ fontSize: '30px', marginBottom: '18px' }}>{resource.title}</h3>
-                <div style={{ display: 'grid', gap: '12px' }}>
-                  {resource.actions.map((action, index) => (
-                    <a
-                      key={action.label}
-                      href={action.href}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        ...flatActionLinkStyle,
-                        background: index === 0 ? 'linear-gradient(135deg, #ff7b72, #ef4444)' : 'linear-gradient(135deg, #4ade80, #16a34a)'
-                      }}
-                    >
-                      <ExternalLink size={15} />
-                      <span>{action.label}</span>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-
-        <div style={{ background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.72)', boxShadow: '0 24px 40px rgba(70, 113, 167, 0.12)', borderRadius: '26px', padding: '18px', backdropFilter: 'blur(16px)' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', alignItems: 'center', gap: '18px', background: 'white', borderRadius: '22px', padding: '14px 18px', border: '1px solid #e5edf8' }}>
-            <div style={{ width: '92px', height: '92px', borderRadius: '22px', background: 'linear-gradient(135deg, #e0ecff, #f8fbff)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
-              <Siren size={42} />
-            </div>
-            <div>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', background: 'linear-gradient(135deg, #fbbf24, #f59e0b)', color: 'white', padding: '10px 20px', borderRadius: '14px', fontSize: '22px', fontWeight: 800, marginBottom: '14px' }}>
-                <AlertTriangle size={22} /> AI Safety Tip
-              </div>
-              <p style={{ fontSize: '22px', color: '#36506f', lineHeight: 1.5 }}>
-                Save `1916`, `100`, `101`, and `108` before monsoon season. Later, this panel can be fed by Firebase for live ward alerts, safety notices, and emergency advisories.
-              </p>
-            </div>
-          </div>
-        </div>
       </section>
     </div>
   );
@@ -263,7 +170,7 @@ const resourceLinkButtonStyle = {
   color: 'white',
   borderRadius: '12px',
   padding: '12px 14px',
-  fontSize: '15px',
+  fontSize: '14px',
   fontWeight: 700,
   boxShadow: '0 10px 20px rgba(22, 163, 74, 0.16)',
   textDecoration: 'none',
@@ -278,7 +185,7 @@ const flatActionLinkStyle = {
   color: 'white',
   borderRadius: '12px',
   padding: '12px 14px',
-  fontSize: '15px',
+  fontSize: '14px',
   fontWeight: 700,
   boxShadow: '0 10px 20px rgba(22, 163, 74, 0.16)',
   textDecoration: 'none'

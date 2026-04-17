@@ -29,6 +29,7 @@ import {
 } from 'chart.js';
 import { Doughnut, Line } from 'react-chartjs-2';
 import { db } from '../services/firebase';
+import { processReport } from '../services/dataSyncService';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Tooltip, Legend, Filler);
 
@@ -86,85 +87,7 @@ const demoAlerts = [
 const severityOptions = ['All', 'Critical', 'High Risk', 'Medium', 'Low'];
 const trendLabels = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr'];
 
-const formatAlert = (alert) => {
-  const createdAtLabel = alert.createdAt?.toDate
-    ? getRelativeTime(alert.createdAt.toDate())
-    : alert.createdAtLabel || 'Just now';
-
-  const category = normalizeCategory(alert.category);
-  const color = alert.color || getSeverityColor(category);
-
-  return {
-    ...alert,
-    category,
-    color,
-    createdAtLabel,
-    score: alert.score ?? scoreFromCategory(category),
-    status: alert.status || defaultStatus(category),
-    tag: alert.tag || category
-  };
-};
-
-const normalizeCategory = (category) => {
-  const value = (category || '').toLowerCase();
-  if (value.includes('critical')) return 'Critical';
-  if (value.includes('high')) return 'High Risk';
-  if (value.includes('medium')) return 'Medium';
-  if (value.includes('low')) return 'Low';
-  return 'Medium';
-};
-
-const getSeverityColor = (category) => {
-  switch (category) {
-    case 'Critical':
-      return '#dc2626';
-    case 'High Risk':
-      return '#b45309';
-    case 'Low':
-      return '#16a34a';
-    default:
-      return '#2563eb';
-  }
-};
-
-const scoreFromCategory = (category) => {
-  switch (category) {
-    case 'Critical':
-      return 90;
-    case 'High Risk':
-      return 74;
-    case 'Low':
-      return 36;
-    default:
-      return 55;
-  }
-};
-
-const defaultStatus = (category) => {
-  switch (category) {
-    case 'Critical':
-      return 'Immediate Action';
-    case 'High Risk':
-      return 'Escalated';
-    case 'Low':
-      return 'Monitoring';
-    default:
-      return 'Scheduled';
-  }
-};
-
-const getRelativeTime = (date) => {
-  const diffMs = Date.now() - date.getTime();
-  const diffMinutes = Math.max(1, Math.floor(diffMs / 60000));
-
-  if (diffMinutes < 60) return `${diffMinutes} min ago`;
-
-  const diffHours = Math.floor(diffMinutes / 60);
-  if (diffHours < 24) return `${diffHours} hr ago`;
-
-  const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-};
+// formatAlert removed as it's now handled by processReport in dataSyncService
 
 const getSeverityIcon = (category) => {
   switch (category) {
@@ -188,14 +111,14 @@ const Alerts = () => {
     const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setAlerts(data.map(formatAlert));
+      setAlerts(data.map(processReport));
     });
 
     return unsubscribe;
   }, []);
 
   const allAlerts = useMemo(() => (
-    alerts.length > 0 ? alerts : demoAlerts.map(formatAlert)
+    alerts.length > 0 ? alerts : demoAlerts.map(processReport)
   ), [alerts]);
 
   const filteredAlerts = useMemo(() => (
@@ -287,8 +210,8 @@ const Alerts = () => {
   ), [allAlerts]);
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: '72px', background: '#f4f7fb' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', minHeight: 'calc(100vh - 72px)' }}>
+    <div style={{ minHeight: '100vh', paddingTop: '100px', background: 'transparent' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', minHeight: 'calc(100vh - 100px)' }}>
         <aside style={currentView === 'overview' ? lightOverviewSidebarStyle : sidebarStyle}>
           <div>
             <div style={{ fontSize: '13px', fontWeight: 700, color: currentView === 'overview' ? '#7f8db4' : 'var(--text-muted)', marginBottom: '12px', letterSpacing: currentView === 'overview' ? '1.5px' : 'normal', textTransform: currentView === 'overview' ? 'uppercase' : 'none' }}>
@@ -600,10 +523,16 @@ const AlertCard = ({ alert, index }) => {
 
       <div>
         <h3 style={{ fontSize: '25px', lineHeight: 1.25, marginBottom: '14px', maxWidth: '320px' }}>{alert.type}</h3>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '15px', marginBottom: '18px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '15px', marginBottom: '12px' }}>
           <MapPin size={15} />
           <span>{alert.address || 'Mumbai location pending'}</span>
         </div>
+        {alert.isDelayed && (
+          <div style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', border: '1px solid #e2e8f0' }}>
+            <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-muted)' }}>EST. AI COST</div>
+            <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--primary)' }}>₹{alert.aiData.estimatedCost.toLocaleString()}</div>
+          </div>
+        )}
         <p style={{ color: 'var(--text-muted)', fontSize: '16px', lineHeight: 1.7 }}>{alert.description}</p>
       </div>
 

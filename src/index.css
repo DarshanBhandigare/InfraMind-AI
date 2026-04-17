@@ -23,7 +23,10 @@
   --high-risk: #FF8B00;
   --critical: #FF5630;
 
-  --nav-height: 72px;
+  --nav-height: 80px;
+  --nav-blur: 24px;
+  --glass-bg: rgba(235, 245, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.6);
 }
 
 * {
@@ -34,9 +37,11 @@
 
 body {
   font-family: 'Inter', sans-serif;
-  background-color: var(--background);
+  background: linear-gradient(135deg, #f0f7ff 0%, #ffffff 50%, #f0f7ff 100%);
+  background-attachment: fixed;
   color: var(--text);
   line-height: 1.5;
+  min-height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -90,6 +95,66 @@ button {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.glass-nav {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--nav-blur));
+  -webkit-backdrop-filter: blur(var(--nav-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: 
+    0 10px 40px rgba(0, 48, 120, 0.12),
+    0 4px 10px rgba(0, 0, 0, 0.05),
+    inset 0 0 20px rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-item-liquid {
+  position: relative;
+  color: var(--text-muted);
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.nav-item-liquid:hover {
+  color: var(--primary);
+  background: rgba(0, 82, 204, 0.06);
+  transform: translateY(-1px);
+}
+
+.nav-item-liquid::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 2px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateX(-50%);
+}
+
+.nav-item-liquid:hover::after {
+  width: 20px;
+}
+
+.btn-liquid {
+  background: linear-gradient(135deg, var(--primary), #4b7bec);
+  color: white;
+  padding: 10px 24px;
+  border-radius: 14px;
+  font-weight: 600;
+  box-shadow: 0 4px 15px rgba(0, 82, 204, 0.2);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-liquid:hover {
+  transform: scale(1.02) translateY(-1px);
+  box-shadow: 0 8px 25px rgba(0, 82, 204, 0.3);
 }
 
 .pill {

@@ -17,65 +17,98 @@ const Navbar = () => {
   };
 
   return (
-    <nav style={{
-      height: 'var(--nav-height)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '0 40px',
-      background: 'white',
-      borderBottom: '1px solid var(--border)',
+    <div style={{
       position: 'fixed',
-      top: 0,
-      width: '100%',
-      zIndex: 1000
+      top: '16px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      width: '94%',
+      maxWidth: '1400px', // Increased max-width to accommodate all links on one line
+      zIndex: 2000,
     }}>
-      <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-        <Shield size={28} color="var(--primary)" fill="var(--primary)" fillOpacity={0.1} />
-        <span style={{ fontSize: '20px', fontWeight: 800, color: 'var(--primary)', letterSpacing: '-0.5px' }}>
-          InfraMind AI
-        </span>
-      </Link>
+      <nav className="glass-nav" style={{
+        height: '64px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 24px',
+      }}>
+        {/* Left Section: Logo */}
+        <div style={{ display: 'flex', flex: '0 0 200px' }}>
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
+            <div style={{ 
+              background: 'linear-gradient(135deg, var(--primary), #4b7bec)',
+              width: '36px',
+              height: '36px',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 12px rgba(0, 82, 204, 0.2)',
+              flexShrink: 0
+            }}>
+              <Shield size={20} color="white" fill="white" fillOpacity={0.2} />
+            </div>
+            <span style={{ fontSize: '18px', fontWeight: 800, color: 'var(--primary)', letterSpacing: '-0.5px', whiteSpace: 'nowrap' }}>
+              InfraMind AI
+            </span>
+          </Link>
+        </div>
 
-      <div style={{ display: 'flex', gap: '32px', alignItems: 'center' }}>
-        <Link to="/" style={navLinkStyle}>Home</Link>
-        <Link to="/map" style={navLinkStyle}>Map</Link>
-        <Link to="/dashboard" style={navLinkStyle}>Dashboard</Link>
-        <Link to="/alerts" style={navLinkStyle}>Alerts</Link>
-        <Link to="/about" style={navLinkStyle}>Resources</Link>
-        <Link to="/contact" style={navLinkStyle}>Contact</Link>
-      </div>
+        {/* Center Section: Navigation Links */}
+        <div style={{ 
+          display: 'flex', 
+          gap: '12px', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          flex: '1',
+          overflow: 'hidden' 
+        }}>
+          <Link to="/" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Home</Link>
+          <Link to="/map" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Map</Link>
+          <Link to="/dashboard" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Dashboard</Link>
+          <Link to="/alerts" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Alerts</Link>
+          <Link to="/hub" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Escalation Hub</Link>
+          <Link to="/about" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Resources</Link>
+          <Link to="/contact" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Contact</Link>
+        </div>
 
-      <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-        {user ? (
-          <>
-            <button onClick={handleLogout} className="btn-outline" style={{ fontSize: '14px' }}>
-              Logout
-            </button>
-            <Link to="/report" className="btn-primary" style={{ fontSize: '14px' }}>
-              Report Issue
-            </Link>
-          </>
-        ) : (
-          <>
-            <Link to="/admin/login" className="btn-outline" style={{ fontSize: '14px' }}>
-              Admin Login
-            </Link>
-            <Link to="/report" className="btn-primary" style={{ fontSize: '14px' }}>
-              Report Issue
-            </Link>
-          </>
-        )}
-      </div>
-    </nav>
+        {/* Right Section: Auth/Actions */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end', flex: '0 0 280px' }}>
+          {user ? (
+            <>
+              <button 
+                onClick={handleLogout} 
+                style={{ 
+                  background: 'none', 
+                  border: 'none', 
+                  color: 'var(--text-muted)', 
+                  fontWeight: 600, 
+                  fontSize: '14px',
+                  padding: '8px 16px',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                Logout
+              </button>
+              <Link to="/report" className="btn-liquid" style={{ textDecoration: 'none', fontSize: '14px', whiteSpace: 'nowrap' }}>
+                Report Issue
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link to="/admin/login" className="nav-item-liquid" style={{ textDecoration: 'none', fontSize: '14px', whiteSpace: 'nowrap' }}>
+                Admin Login
+              </Link>
+              <Link to="/report" className="btn-liquid" style={{ textDecoration: 'none', fontSize: '14px', whiteSpace: 'nowrap' }}>
+                Report Issue
+              </Link>
+            </>
+          )}
+        </div>
+      </nav>
+    </div>
   );
-};
-
-const navLinkStyle = {
-  fontSize: '14px',
-  fontWeight: 500,
-  color: 'var(--text-muted)',
-  textDecoration: 'none',
 };
 
 export default Navbar;
