@@ -19,7 +19,9 @@ import DashboardLayout from './components/DashboardLayout';
 
 import { useLocation } from 'react-router-dom';
 
-// Protected Route Wrapper
+import { isAdmin } from './utils/adminConfig';
+
+// Protected Route for Citizens
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
@@ -28,14 +30,43 @@ const ProtectedRoute = ({ children }) => {
   return user ? children : <Navigate to="/login" state={{ from: location }} replace />;
 };
 
+// Admin Only Route - Highly Secure
+const AdminRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+  
+  if (loading) return null;
+  if (!user || !isAdmin(user.email)) {
+    return <Navigate to="/" replace />;
+  }
+  
+  return children;
+};
+
+// Admin Login Route - Prevents access if already logged in
+const AdminLoginRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  
+  if (loading) return null;
+  
+  if (user) {
+    if (isAdmin(user.email)) {
+      return <Navigate to="/admin/dashboard" replace />;
+    }
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return children;
+};
+
 // Layout Wrapper to switch between Landing and Dashboard
 const AppLayout = ({ children }) => {
   const { user } = useAuth();
   const location = useLocation();
   
-  // Routes that should NOT have the Sidebar (Landing/Auth/Public)
+  // Routes that should NOT have the Sidebar
   const isPublicReport = location.pathname === '/report' && !user;
-  const publicRoutes = ['/', '/login', '/signup', '/about', '/contact', '/admin/login', '/alerts', '/hub'];
+  const publicRoutes = ['/', '/login', '/signup', '/about', '/contact', '/admin/login'];
   
   if (user && !publicRoutes.includes(location.pathname) && !isPublicReport) {
     return <DashboardLayout>{children}</DashboardLayout>;
@@ -62,14 +93,16 @@ function App() {
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/map" element={<MapPage />} />
-              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route path="/admin/login" element={<AdminLoginRoute><AdminLogin /></AdminLoginRoute>} />
               <Route path="/report" element={<CitizenReport />} />
 
-              {/* Protected Routes */}
+              {/* Citizen & Public Content */}
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/alerts" element={<Alerts />} />
               <Route path="/hub" element={<EscalationHub />} />
-              <Route path="/admin/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+              
+              {/* Admin Only Content */}
+              <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
               
               {/* Fallback */}
               <Route path="*" element={<Navigate to="/" />} />

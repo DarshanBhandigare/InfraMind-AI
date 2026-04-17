@@ -1,5 +1,5 @@
-import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import React, { useMemo } from 'react';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
   LayoutDashboard, 
@@ -10,15 +10,25 @@ import {
   Search, 
   Bell, 
   LogOut, 
+  ExternalLink,
   LifeBuoy,
   Wrench,
   ShieldCheck,
-  AlertCircle
+  AlertCircle,
+  Activity
 } from 'lucide-react';
+import { isAdmin } from '../utils/adminConfig';
 
 const DashboardLayout = ({ children }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isUserAdmin = useMemo(() => {
+    return user && user.email ? isAdmin(user.email) : false;
+  }, [user]);
+
+  const isAdminRoute = useMemo(() => location.pathname.startsWith('/admin'), [location.pathname]);
 
   const handleLogout = async () => {
     try {
@@ -29,76 +39,98 @@ const DashboardLayout = ({ children }) => {
     }
   };
 
-  return (
-    <div className="dashboard-container">
-      {/* Sidebar */}
-      <aside className="sidebar">
-        <div className="sidebar-main">
-          {/* Brand/Profile */}
-          <div style={{ padding: '0 16px 32px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-              <div style={{ width: '40px', height: '40px', background: 'var(--primary)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-                <Shield size={24} />
-              </div>
-              <span style={{ fontWeight: 800, fontSize: '18px', color: 'var(--primary)' }}>InfraMind AI</span>
-            </div>
+  const themeStyle = isAdminRoute ? adminTheme : publicTheme;
 
-            <div style={{ background: 'var(--surface)', padding: '16px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#DFE1E6', overflow: 'hidden' }}>
-                 <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="Profile" />
+  return (
+    <div style={{ ...dashboardContainerStyle, ...themeStyle.container }}>
+      {/* Sidebar - Professionally Redesigned */}
+      <aside style={{ ...sidebarStyle, ...themeStyle.sidebar }}>
+        <div style={{ padding: '32px 24px' }}>
+          {/* Brand */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '48px' }}>
+            <div style={brandLogoStyle}>
+              {isAdminRoute ? <Activity size={22} color="#10b981" /> : <Shield size={22} color="white" />}
+            </div>
+            <span style={{ 
+              fontWeight: 900, 
+              fontSize: '20px', 
+              color: isAdminRoute ? '#10b981' : 'var(--primary)',
+              letterSpacing: '-0.5px' 
+            }}>
+              {isAdminRoute ? 'OPERATIONS' : 'InfraMind AI'}
+            </span>
+          </div>
+
+          {/* Profile Card */}
+          <div className={isAdminRoute ? 'glass-premium' : ''} style={profileCardStyle(isAdminRoute)}>
+            <div style={avatarStyle}>
+               <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email || 'Felix'}`} alt="Profile" />
+            </div>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 800, color: isAdminRoute ? 'white' : 'var(--text)' }}>
+                {isUserAdmin ? 'Admin Controller' : 'City Architect'}
               </div>
-              <div>
-                <div style={{ fontSize: '13px', fontWeight: 700 }}>City Architect</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>District 4 Manager</div>
+              <div style={{ fontSize: '10px', color: isAdminRoute ? '#64748b' : 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
+                {isUserAdmin ? 'ID: AUTH-ROOT' : 'District 4 Manager'}
               </div>
             </div>
           </div>
 
           {/* Navigation */}
-          <nav>
-            <div style={sectionLabelStyle}>MAIN MENU</div>
-            <SidebarLink to="/dashboard" icon={<LayoutDashboard size={20} />} label="Overview" />
-            <SidebarLink to="/map" icon={<MapIcon size={20} />} label="Map View" />
-            <SidebarLink to="/report" icon={<FileText size={20} />} label="Issue Reports" />
-            <SidebarLink to="/dashboard" icon={<Wrench size={20} />} label="Maintenance" />
-            <SidebarLink to="/alerts" icon={<ShieldCheck size={20} />} label="Public Safety" />
+          <nav style={{ marginTop: '40px', display: 'grid', gap: '6px' }}>
+            <div style={sectionLabelStyle(isAdminRoute)}>{isAdminRoute ? 'COMMAND CENTER' : 'MANAGEMENT'}</div>
             
-            {!user && (
-              <button className="btn-primary" style={{ width: '100%', padding: '14px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '24px' }}>
-                <AlertCircle size={18} /> Emergency Dispatch
-              </button>
+            {!isAdminRoute ? (
+              <>
+                {/* Citizen Links */}
+                <SidebarLink to="/dashboard" icon={<LayoutDashboard size={20} />} label="Overview" isAdmin={isAdminRoute} />
+                <SidebarLink to="/report" icon={<FileText size={20} />} label="Report Issue" isAdmin={isAdminRoute} />
+                <SidebarLink to="/map" icon={<MapIcon size={20} />} label="Asset Maps" isAdmin={isAdminRoute} />
+                <SidebarLink to="/alerts" icon={<ShieldCheck size={20} />} label="Alert Hub" isAdmin={isAdminRoute} />
+                
+                {/* Strictly Admin-only link (Hidden Access) */}
+                {isUserAdmin && (
+                  <SidebarLink to="/admin/dashboard" icon={<Wrench size={20} />} label="Admin Console" isAdmin={isAdminRoute} />
+                )}
+              </>
+            ) : (
+              <>
+                {/* Admin Specific Links */}
+                <SidebarLink to="/admin/dashboard" icon={<LayoutDashboard size={20} />} label="Admin Dashboard" isAdmin={isAdminRoute} />
+                <SidebarLink to="/dashboard" icon={<ExternalLink size={20} />} label="Citizen View" isAdmin={isAdminRoute} />
+              </>
             )}
             
-            <SidebarLink to="/contact" icon={<LifeBuoy size={20} />} label="Help Center" />
-            <button onClick={handleLogout} style={logoutButtonStyle}>
-              <LogOut size={20} /> Log Out
+            <div style={{ ...sectionLabelStyle(isAdminRoute), marginTop: '24px' }}>SESSION</div>
+            <button onClick={handleLogout} style={logoutButtonStyle(isAdminRoute)}>
+              <LogOut size={20} /> Terminate Session
             </button>
           </nav>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <main className="main-content">
-        <header className="top-bar">
-          <div style={{ position: 'relative', width: '400px' }}>
-            <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+      <main style={mainContentStyle}>
+        <header style={{ ...topBarStyle, ...themeStyle.topBar }}>
+          <div style={{ position: 'relative', width: '440px' }}>
+            <Search size={18} style={searchIconStyle(isAdminRoute)} />
             <input 
+              style={searchInputStyle(isAdminRoute)}
               className="input-field" 
-              placeholder="Search address, report ID, or assets..." 
-              style={{ paddingLeft: '48px', background: '#F4F5F7', border: 'none' }}
+              placeholder="Query city assets, report clusters, or system nodes..." 
             />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <button style={iconButtonStyle}><Bell size={20} /></button>
-            <button style={iconButtonStyle}><Settings size={20} /></button>
-            <div style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--border)' }}>
-               <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="Profile" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+            <button style={topIconStyle(isAdminRoute)}><Bell size={20} /></button>
+            <button style={topIconStyle(isAdminRoute)}><Settings size={20} /></button>
+            <div style={topAvatarStyle(isAdminRoute)}>
+               <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email || 'Felix'}`} alt="Profile" />
             </div>
           </div>
         </header>
 
-        <section style={{ padding: '0 0 60px' }}>
+        <section style={{ padding: '0 0 60px' }} className={isAdminRoute ? 'command-gradient' : ''}>
           {children}
         </section>
       </main>
@@ -106,36 +138,100 @@ const DashboardLayout = ({ children }) => {
   );
 };
 
-const SidebarLink = ({ to, icon, label }) => (
+// Sub-components
+const SidebarLink = ({ to, icon, label, isAdmin }) => (
   <NavLink 
     to={to} 
-    className={({ isActive }) => `sidebar-nav-item ${isActive ? 'active' : ''}`}
+    style={({ isActive }) => ({
+      display: 'flex',
+      alignItems: 'center',
+      gap: '14px',
+      padding: '12px 16px',
+      borderRadius: '12px',
+      color: isActive 
+        ? (isAdmin ? '#10b981' : 'var(--primary)') 
+        : (isAdmin ? '#64748b' : 'var(--text-muted)'),
+      background: isActive 
+        ? (isAdmin ? 'rgba(16, 185, 129, 0.1)' : '#EBF2FF') 
+        : 'transparent',
+      textDecoration: 'none',
+      fontSize: '14px',
+      fontWeight: isActive ? 700 : 500,
+      transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+    })}
   >
     {icon}
     <span>{label}</span>
   </NavLink>
 );
 
-const sectionLabelStyle = {
-  fontSize: '11px',
-  fontWeight: 800,
-  color: 'var(--text-muted)',
-  letterSpacing: '1px',
-  margin: '0 16px 12px',
-  textTransform: 'uppercase'
+// Theme Definitions
+const publicTheme = {
+  container: { background: '#F4F7FA' },
+  sidebar: { background: 'white', borderRight: '1px solid var(--border)' },
+  topBar: { background: 'white', borderBottom: '1px solid var(--border)' }
 };
 
-const iconButtonStyle = {
-  background: 'none',
-  color: 'var(--text-muted)',
-  padding: '8px',
-  borderRadius: '8px',
+const adminTheme = {
+  container: { background: '#020617' },
+  sidebar: { background: '#020617', borderRight: '1px solid rgba(255,255,255,0.05)' },
+  topBar: { background: 'rgba(2, 6, 23, 0.8)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.05)' }
+};
+
+// Styles
+const dashboardContainerStyle = {
+  display: 'flex',
+  minHeight: '100vh',
+};
+
+const sidebarStyle = {
+  width: '300px',
+  display: 'flex',
+  flexDirection: 'column',
+  position: 'fixed',
+  height: '100vh',
+  zIndex: 100,
+};
+
+const brandLogoStyle = {
+  width: '42px',
+  height: '42px',
+  background: '#0f172a',
+  borderRadius: '12px',
   display: 'flex',
   alignItems: 'center',
-  justifyContent: 'center'
+  justifyContent: 'center',
+  boxShadow: '0 8px 16px rgba(0,0,0,0.2)'
 };
 
-const logoutButtonStyle = {
+const profileCardStyle = (isAdmin) => ({
+  background: isAdmin ? 'transparent' : 'var(--surface)',
+  padding: '16px',
+  borderRadius: '16px',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '14px',
+});
+
+const avatarStyle = {
+  width: '44px',
+  height: '44px',
+  borderRadius: '12px',
+  background: '#DFE1E6',
+  overflow: 'hidden',
+  flexShrink: 0
+};
+
+const sectionLabelStyle = (isAdmin) => ({
+  fontSize: '10px',
+  fontWeight: 900,
+  color: isAdmin ? '#334155' : 'var(--text-muted)',
+  letterSpacing: '1.5px',
+  margin: '0 16px 12px',
+  textTransform: 'uppercase'
+});
+
+const logoutButtonStyle = (isAdmin) => ({
   width: '100%',
   textAlign: 'left',
   background: 'none',
@@ -144,10 +240,62 @@ const logoutButtonStyle = {
   gap: '12px',
   padding: '12px 16px',
   borderRadius: '12px',
-  color: 'var(--text-muted)',
-  fontWeight: 500,
-  transition: 'all 0.2s',
-  marginTop: '4px'
+  color: isAdmin ? '#ef4444' : 'var(--text-muted)',
+  fontWeight: 600,
+  fontSize: '14px',
+  marginTop: '24px'
+});
+
+const mainContentStyle = {
+  flex: 1,
+  marginLeft: '300px',
+  minHeight: '100vh',
 };
+
+const topBarStyle = {
+  height: '80px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  padding: '0 48px',
+  position: 'sticky',
+  top: 0,
+  zIndex: 90,
+};
+
+const searchIconStyle = (isAdmin) => ({
+  position: 'absolute',
+  left: '20px',
+  top: '50%',
+  transform: 'translateY(-50%)',
+  color: isAdmin ? '#475569' : 'var(--text-muted)',
+});
+
+const searchInputStyle = (isAdmin) => ({
+  paddingLeft: '56px',
+  background: isAdmin ? '#0f172a' : '#F4F5F7',
+  border: isAdmin ? '1px solid rgba(255,255,255,0.05)' : 'none',
+  color: isAdmin ? 'white' : 'var(--text)',
+  borderRadius: '14px'
+});
+
+const topIconStyle = (isAdmin) => ({
+  background: 'none',
+  color: isAdmin ? '#64748b' : 'var(--text-muted)',
+  padding: '10px',
+  borderRadius: '12px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  border: isAdmin ? '1px solid rgba(255,255,255,0.05)' : 'none'
+});
+
+const topAvatarStyle = (isAdmin) => ({
+  width: '44px',
+  height: '44px',
+  borderRadius: '14px',
+  overflow: 'hidden',
+  border: isAdmin ? '1px solid #10b981' : '2px solid var(--border)',
+});
 
 export default DashboardLayout;

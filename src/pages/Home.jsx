@@ -1,171 +1,176 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, ArrowRight, Play, Globe, CheckCircle } from 'lucide-react';
+import { Shield, ArrowRight, Play, Globe, CheckCircle, Activity, Zap, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { db } from '../services/firebase';
+import { subscribeToStats } from '../services/statsService';
+import { processReport } from '../services/dataSyncService';
 
 const Home = () => {
+  const [stats, setStats] = useState({ total: 0, high: 0, resolved: '0%' });
+  const [recentReports, setRecentReports] = useState([]);
+
+  useEffect(() => {
+    // Subscribe to live stats
+    const unsubscribeStats = subscribeToStats((data) => {
+      const resolvedPct = data.totalReports > 0 
+        ? Math.round((data.resolvedCount / data.totalReports) * 100) 
+        : 0;
+      setStats({
+        total: data.totalReports,
+        high: data.highRiskCount,
+        resolved: `${resolvedPct}%`
+      });
+    });
+
+    // Fetch 3 most recent reports
+    const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'), limit(3));
+    const unsubscribeReports = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => processReport({ id: doc.id, ...doc.data() }));
+      setRecentReports(data);
+    });
+
+    return () => {
+      unsubscribeStats();
+      unsubscribeReports();
+    };
+  }, []);
+
   return (
-    <div style={{ background: '#fff' }}>
-      {/* Hero Section */}
-      <section className="container" style={{ paddingTop: 'calc(var(--nav-height) + 60px)', paddingBottom: '80px' }}>
-        <div className="grid-2">
-          {/* Left Side Content */}
-          <motion.div
-            initial={{ x: -30, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0.6 }}
-          >
-            <div className="pill pill-blue" style={{ marginBottom: '24px' }}>
-              <Shield size={12} fill="var(--primary)" /> NEXT-GEN CIVIC INTELLIGENCE
-            </div>
-            <h1 style={{ fontSize: '64px', lineHeight: 1.1, marginBottom: '24px', letterSpacing: '-1.5px' }}>
-              Predict<br />
-              Failure.<br />
-              <span style={{ color: 'var(--primary)' }}>  Before It</span><span style={{ color: 'var(--primary)' }}> <br />Happens.</span>
-            </h1>
-            <p style={{ fontSize: '18px', color: 'var(--text-muted)', marginBottom: '40px', maxWidth: '480px' }}>
-              Leveraging real-time telemetry and AI to identify urban maintenance needs before they impact the community.
-            </p>
-            <div style={{ display: 'flex', gap: '16px' }}>
-              <Link to="/report" className="btn-primary" style={{ padding: '14px 28px', fontSize: '16px' }}>
-                Report an Issue
-              </Link>
-              <Link to="/dashboard" className="btn-outline" style={{ padding: '14px 28px', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                Explore Analytics <ArrowRight size={18} />
-              </Link>
-            </div>
-          </motion.div>
+    <div style={{ background: '#fff', overflow: 'hidden' }}>
+      {/* Hero Section - Upgraded for WOW factor */}
+      <section style={heroContainerStyle}>
+        <div style={heroGradientOverlay} />
+        <div className="container" style={{ position: 'relative', zIndex: 1, paddingTop: '100px', paddingBottom: '120px' }}>
+          <div className="grid-2" style={{ alignItems: 'center', gap: '60px' }}>
+            <motion.div
+              initial={{ x: -50, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ duration: 0.8 }}
+            >
+              <div style={premiumBadgeStyle}>
+                <Zap size={14} fill="#60a5fa" color="#60a5fa" />
+                <span>POWERED BY DISTRIBUTED INTELLIGENCE</span>
+              </div>
+              <h1 style={heroTitleStyle}>
+                Urban Infrastructure <br />
+                <span style={{ color: 'var(--primary)', textShadow: '0 0 30px rgba(37, 99, 235, 0.2)' }}>
+                  Perfected by AI.
+                </span>
+              </h1>
+              <p style={heroSubtitleStyle}>
+                The world's first predictive maintenance grid for metropolitan assets. 
+                Identify vulnerabilities, automate escalations, and protect the community in real-time.
+              </p>
+              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                <motion.div whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}>
+                  <Link to="/report" style={ctaPrimaryStyle}>
+                    Submit Report
+                  </Link>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}>
+                  <Link to="/dashboard" style={ctaSecondaryStyle}>
+                    Live Command <ArrowRight size={18} />
+                  </Link>
+                </motion.div>
+              </div>
+            </motion.div>
 
-          {/* Right Side Image Card */}
-          <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            style={{ position: 'relative' }}
-          >
-            <div style={{
-              borderRadius: '24px',
-              overflow: 'hidden',
-              boxShadow: '0 40px 80px -20px rgba(0,0,0,0.2)',
-              position: 'relative',
-              background: '#000'
-            }}>
-              <img
-                src="https://images.unsplash.com/photo-1775804323165-b95817c4951a?q=80&w=1175&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-                alt="Smart City Infrastructure"
-                style={{ width: '100%', display: 'block', opacity: 0.8 }}
-              />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 1, delay: 0.2 }}
+              style={{ position: 'relative' }}
+            >
+              <div style={heroImageContainerStyle}>
+                <img
+                  src="https://images.unsplash.com/photo-1449824913935-59a10b8d2000?q=80&w=1470&auto=format&fit=crop"
+                  alt="City Command"
+                  style={heroImageStyle}
+                />
+                {/* Floating Glass Data Card */}
+                <motion.div 
+                  animate={{ y: [0, -15, 0] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                  className="glass" 
+                  style={floatingCardStyle}
+                >
+                  <Activity size={24} color="var(--primary)" />
+                  <div>
+                    <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>System Calibration</div>
+                    <div style={{ fontSize: '20px', fontWeight: 800 }}>Nominal Status</div>
+                  </div>
+                </motion.div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
 
-              {/* Overlay Stat Card */}
-              <div style={{
-                position: 'absolute',
-                bottom: '30px',
-                left: '30px',
-                right: '30px',
-                background: 'rgba(255, 255, 255, 0.8)',
-                backdropFilter: 'blur(10px)',
-                borderRadius: '12px',
-                padding: '20px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                border: '1px solid rgba(255,255,255,0.3)'
-              }}>
+      {/* Real-time Stats Section */}
+      <section style={{ padding: '100px 0', background: 'var(--surface)' }}>
+        <div className="container">
+          <div style={statsGridStyle}>
+            <StatCard label="Live Reports" value={stats.total} icon={<Shield color="var(--primary)" />} color="#deebff" />
+            <StatCard label="High Risk Clusters" value={stats.high} icon={<AlertTriangle color="var(--critical)" />} color="#ffebe6" />
+            <StatCard label="Resolved Efficiency" value={stats.resolved} icon={<CheckCircle color="var(--safe)" />} color="#e3fcef" />
+          </div>
+
+          <div className="grid-2" style={{ marginTop: '80px', gap: '40px' }}>
+            {/* Map Preview */}
+            <div style={mapPreviewStyle}>
+              <img src="https://i.pinimg.com/736x/17/85/f9/1785f9a5ffdb6e8070dc70579d1b044c.jpg" alt="Map" style={mapImageStyle} />
+              <div style={mapOverlayStyle}>
                 <div>
-                  <div className="pill pill-blue" style={{ marginBottom: '4px', fontSize: '9px' }}>Live Feed</div>
-                  <h4 style={{ fontSize: '18px' }}>The Metro Bridge</h4>
+                  <h3 style={{ color: 'white', fontSize: '28px', marginBottom: '8px' }}>Metropolitan Grid</h3>
+                  <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '15px' }}>Visualizing every sensor node and citizen report in real-time.</p>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--safe)' }}>98%</div>
-                  <div style={{ fontSize: '10px', fontWeight: 700, opacity: 0.6, textTransform: 'uppercase' }}>Safe</div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Feature Section (Matches Stats in Image 2) */}
-      <section style={{ background: 'var(--surface)', padding: '80px 0' }}>
-        <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
-            <StatSmallCard title="Total Issues" count="1,240" icon={<div style={{ background: '#deebff', padding: '8px', borderRadius: '8px' }}><Shield size={20} color="var(--primary)" /></div>} />
-            <StatSmallCard title="High Risk Zones" count="12" icon={<div style={{ background: '#ffebe6', padding: '8px', borderRadius: '8px' }}><Shield size={20} color="var(--critical)" /></div>} />
-            <StatSmallCard title="Resolved Issues" count="98%" icon={<div style={{ background: '#e3fcef', padding: '8px', borderRadius: '8px' }}><CheckCircle size={20} color="var(--safe)" /></div>} />
-          </div>
-
-          <div className="grid-2" style={{ marginTop: '60px' }}>
-            {/* Live Map Preview Card */}
-            <div style={{ position: 'relative', borderRadius: '24px', overflow: 'hidden', height: '400px', background: '#333' }}>
-              <img src="https://i.pinimg.com/736x/17/85/f9/1785f9a5ffdb6e8070dc70579d1b044c.jpg" alt="Map" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} />
-              <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 50%)' }}></div>
-              <div style={{ position: 'absolute', bottom: 30, left: 30, right: 30, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                <div style={{ color: 'white' }}>
-                  <h3 style={{ color: 'white', fontSize: '24px', marginBottom: '4px' }}>Live Infrastructure Map</h3>
-                  <p style={{ opacity: 0.8, fontSize: '14px' }}>Real-time health monitoring of the metropolitan grid.</p>
-                </div>
-                <Link to="/map" className="btn-primary" style={{ background: '#111', color: 'white', borderRadius: '8px', fontSize: '12px' }}>View Full Map</Link>
+                <Link to="/map" className="btn-primary" style={{ background: 'white', color: 'var(--text)', border: 'none' }}>Launch Live View</Link>
               </div>
             </div>
 
-            {/* Recent Submissions List Card */}
-            <div className="card" style={{ height: '400px', display: 'flex', flexDirection: 'column' }}>
-              <h3 style={{ marginBottom: '20px', fontSize: '18px' }}>Recent Submissions</h3>
-              <div style={{ flex: 1, overflowY: 'auto' }}>
-                <SubmissionRow title="Pothole" subtitle="Oak Street, Sector 4" status="Reported" color="var(--critical)" />
-                <SubmissionRow title="Streetlight" subtitle="Park Ave Crossroad" status="In Progress" color="var(--watch)" />
-                <SubmissionRow title="Water Leak" subtitle="Bridge District Pipe 09" status="Resolved" color="var(--safe)" />
+            {/* Live Feed */}
+            <div className="card" style={{ padding: '40px', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+                <h3 style={{ fontSize: '20px' }}>Recent City Reports</h3>
+                <div className="pill pill-blue">LIVE FEED</div>
               </div>
+              <div style={{ display: 'grid', gap: '16px' }}>
+                {recentReports.length > 0 ? recentReports.map((report) => (
+                  <ReportRow key={report.id} report={report} />
+                )) : (
+                  <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                    Waiting for metropolitan data synchronization...
+                  </div>
+                )}
+              </div>
+              <Link to="/dashboard" style={{ marginTop: 'auto', paddingTop: '24px', textAlign: 'center', color: 'var(--primary)', fontWeight: 700, fontSize: '14px', textDecoration: 'none' }}>
+                View Full Queue &rarr;
+              </Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* CTA Footer Section */}
-      <section className="container" style={{ padding: '100px 0', textAlign: 'center' }}>
-        <h2 style={{ fontSize: '36px', marginBottom: '16px' }}>See something that needs attention?</h2>
-        <p style={{ color: 'var(--text-muted)', marginBottom: '40px' }}>Help us keep the city running smoothly. Every report counts towards a better urban experience.</p>
-        <Link to="/report" className="btn-primary" style={{ padding: '16px 40px', fontSize: '18px', borderRadius: '12px' }}>Report an Issue Now</Link>
-      </section>
-
-      {/* Actual Footer */}
-      <footer style={{ borderTop: '1px solid var(--border)', padding: '60px 0 20px' }}>
+      {/* Premium Footer Section */}
+      <footer style={footerStyle}>
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: '1.5fr repeat(3, 1fr)', gap: '40px', marginBottom: '60px' }}>
+          <div style={footerGridStyle}>
             <div>
-              <h3 style={{ fontSize: '20px', color: 'var(--primary)', marginBottom: '16px' }}>InfraMind AI</h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '14px', maxWidth: '240px' }}>Advanced predictive analytics for municipal infrastructure and public works optimization.</p>
+              <h3 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--primary)', marginBottom: '20px' }}>InfraMind AI</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: 1.6 }}>
+                The definitive standard for metropolitan infrastructure management. 
+                Built for cities that never sleep.
+              </p>
             </div>
-            <div>
-              <h4 style={{ fontSize: '12px', textTransform: 'uppercase', marginBottom: '16px', letterSpacing: '1px' }}>Platform</h4>
-              <ul style={footerListStyle}>
-                <li>Infrastructure</li>
-                <li>Maintenance</li>
-                <li>Public Safety</li>
-              </ul>
-            </div>
-            <div>
-              <h4 style={{ fontSize: '12px', textTransform: 'uppercase', marginBottom: '16px', letterSpacing: '1px' }}>Company</h4>
-              <ul style={footerListStyle}>
-                <li>About Us</li>
-                <li>Resources</li>
-                <li>Careers</li>
-              </ul>
-            </div>
-            <div>
-              <h4 style={{ fontSize: '12px', textTransform: 'uppercase', marginBottom: '16px', letterSpacing: '1px' }}>Support</h4>
-              <ul style={footerListStyle}>
-                <li>Contact</li>
-                <li>Privacy Policy</li>
-                <li>API Docs</li>
-              </ul>
-            </div>
+            {/* Footer links mapping... */}
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-muted)', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
-            <span>© 2024 InfraMind AI. Metropolitan Data Systems.</span>
-            <div style={{ display: 'flex', gap: '24px' }}>
-              <span>Status: All Systems Nominal</span>
-              <span>v4.0.0-Stable</span>
+          <div style={footerBottomStyle}>
+            <span>© 2024 InfraMind AI. Built for BMC Mumbai.</span>
+            <div style={{ display: 'flex', gap: '30px' }}>
+              <span>STATUS: NOMINAL</span>
+              <span>LICENSE: ENTERPRISE</span>
             </div>
           </div>
         </div>
@@ -174,27 +179,207 @@ const Home = () => {
   );
 };
 
-const StatSmallCard = ({ title, count, icon }) => (
-  <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '30px' }}>
-    {icon}
+// Sub-components
+const StatCard = ({ label, value, icon, color }) => (
+  <motion.div 
+    whileHover={{ y: -5 }}
+    className="card" 
+    style={{ display: 'flex', alignItems: 'center', gap: '24px', padding: '40px', border: 'none', background: 'white', boxShadow: '0 20px 40px rgba(0,0,0,0.03)' }}
+  >
+    <div style={{ padding: '16px', borderRadius: '16px', background: color }}>{icon}</div>
     <div>
-      <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>{title}</div>
-      <div style={{ fontSize: '32px', fontWeight: 800 }}>{count}</div>
+      <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>{label}</div>
+      <div style={{ fontSize: '36px', fontWeight: 800, color: '#0f172a' }}>{value}</div>
     </div>
-  </div>
+  </motion.div>
 );
 
-const SubmissionRow = ({ title, subtitle, status, color }) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: '#f8f9fb', borderRadius: '12px', marginBottom: '12px' }}>
-    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: color }}></div>
+const ReportRow = ({ report }) => (
+  <div style={reportRowStyle}>
+    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: report.color }} />
     <div style={{ flex: 1 }}>
-      <div style={{ fontSize: '14px', fontWeight: 700 }}>{title}</div>
-      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{subtitle}</div>
+      <div style={{ fontSize: '14px', fontWeight: 700 }}>{report.type}</div>
+      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{report.address}</div>
     </div>
-    <div style={{ fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', color: color }}>{status}</div>
+    <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)' }}>{report.status?.toUpperCase()}</div>
   </div>
 );
 
-const footerListStyle = { listStyle: 'none', fontSize: '14px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '10px' };
+const AlertTriangle = ({ color }) => <Shield size={20} color={color} />;
+
+// Premium Styles
+const heroContainerStyle = {
+  position: 'relative',
+  background: '#0f172a', // Premium deep navy
+  overflow: 'hidden',
+};
+
+const heroGradientOverlay = {
+  position: 'absolute',
+  inset: 0,
+  background: 'radial-gradient(circle at 70% 30%, rgba(37, 99, 235, 0.15) 0%, transparent 70%)',
+};
+
+const premiumBadgeStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: '8px 16px',
+  background: 'rgba(59, 130, 246, 0.1)',
+  border: '1px solid rgba(59, 130, 246, 0.2)',
+  borderRadius: '100px',
+  color: '#60a5fa',
+  fontSize: '11px',
+  fontWeight: 800,
+  letterSpacing: '1px',
+  gap: '10px',
+  marginBottom: '32px'
+};
+
+const heroTitleStyle = {
+  fontSize: '72px',
+  lineHeight: 1.05,
+  fontWeight: 900,
+  color: 'white',
+  letterSpacing: '-3px',
+  marginBottom: '32px'
+};
+
+const heroSubtitleStyle = {
+  fontSize: '20px',
+  lineHeight: 1.6,
+  color: 'rgba(255,255,255,0.6)',
+  maxWidth: '540px',
+  marginBottom: '48px'
+};
+
+const ctaPrimaryStyle = {
+  padding: '16px 32px',
+  fontSize: '15px',
+  fontWeight: 700,
+  borderRadius: '14px',
+  background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+  color: 'white',
+  border: 'none',
+  boxShadow: '0 10px 25px rgba(37, 99, 235, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.2)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '10px',
+  transition: 'all 0.3s ease',
+  textDecoration: 'none',
+  whiteSpace: 'nowrap'
+};
+
+const ctaSecondaryStyle = {
+  padding: '16px 32px',
+  fontSize: '15px',
+  fontWeight: 700,
+  borderRadius: '14px',
+  background: 'rgba(255, 255, 255, 0.03)',
+  backdropFilter: 'blur(10px)',
+  color: 'white',
+  border: '1px solid rgba(255, 255, 255, 0.15)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '10px',
+  transition: 'all 0.3s ease',
+  textDecoration: 'none',
+  whiteSpace: 'nowrap'
+};
+
+const heroImageContainerStyle = {
+  width: '100%',
+  borderRadius: '32px',
+  overflow: 'hidden',
+  boxShadow: '0 50px 100px -20px rgba(0,0,0,0.5)',
+  position: 'relative',
+  aspectRatio: '16/10'
+};
+
+const heroImageStyle = {
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
+  opacity: 0.8
+};
+
+const floatingCardStyle = {
+  position: 'absolute',
+  bottom: '40px',
+  right: '40px',
+  padding: '24px',
+  borderRadius: '20px',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '16px',
+  minWidth: '240px',
+  border: '1px solid rgba(255,255,255,0.1)'
+};
+
+const statsGridStyle = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(3, 1fr)',
+  gap: '24px'
+};
+
+const mapPreviewStyle = {
+  position: 'relative',
+  borderRadius: '32px',
+  overflow: 'hidden',
+  height: '450px',
+  background: '#1e293b'
+};
+
+const mapImageStyle = {
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
+  opacity: 0.5
+};
+
+const mapOverlayStyle = {
+  position: 'absolute',
+  inset: 0,
+  padding: '48px',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'flex-end',
+  alignItems: 'flex-start',
+  background: 'linear-gradient(to top, rgba(15, 23, 42, 0.9) 0%, transparent 60%)',
+  gap: '24px'
+};
+
+const reportRowStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '16px',
+  padding: '16px',
+  background: '#f8fafc',
+  borderRadius: '16px'
+};
+
+const footerStyle = {
+  padding: '100px 0 40px',
+  borderTop: '1px solid var(--border)',
+  background: '#fafafa'
+};
+
+const footerGridStyle = {
+  display: 'grid',
+  gridTemplateColumns: 'minmax(300px, 1fr) repeat(3, 1fr)',
+  gap: '60px',
+  marginBottom: '80px'
+};
+
+const footerBottomStyle = {
+  paddingTop: '40px',
+  borderTop: '1px solid var(--border)',
+  display: 'flex',
+  justifyContent: 'space-between',
+  fontSize: '13px',
+  color: 'var(--text-muted)',
+  fontWeight: 600
+};
 
 export default Home;

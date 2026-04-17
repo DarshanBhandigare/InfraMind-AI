@@ -1,38 +1,26 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { db } from '../services/firebase';
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { 
-  BarChart3, 
   Activity, 
   Map as MapIcon, 
-  Truck, 
-  Settings, 
-  AlertCircle,
-  Clock,
   ExternalLink,
-  Filter
+  AlertTriangle,
+  CheckCircle2,
+  Box,
+  RefreshCcw
 } from 'lucide-react';
-import { 
-  Chart as ChartJS, 
-  CategoryScale, 
-  LinearScale, 
-  PointElement, 
-  LineElement, 
-  Title, 
-  Tooltip, 
-  Legend,
-  Filler
-} from 'chart.js';
-import { Line } from 'react-chartjs-2';
+// Chart imports removed for simplification
+import { motion, AnimatePresence } from 'framer-motion';
+import { subscribeToStats } from '../services/statsService';
+import { processReport } from '../services/dataSyncService';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
-import { subscribeToStats } from '../services/statsService';
-
 const AdminDashboard = () => {
   const [reports, setReports] = useState([]);
-  const [activeTab, setActiveTab] = useState('overview');
   const [globalStats, setGlobalStats] = useState({ totalReports: 0, highRiskCount: 0, resolvedCount: 0 });
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     // Listen to global stats
@@ -43,7 +31,7 @@ const AdminDashboard = () => {
     // Listen to recent reports
     const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'), limit(15));
     const unsubscribeReports = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const data = snapshot.docs.map(doc => processReport({ id: doc.id, ...doc.data() }));
       setReports(data);
     });
 
@@ -53,160 +41,333 @@ const AdminDashboard = () => {
     };
   }, []);
 
-  const lineData = {
-    labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
-    datasets: [
-      {
-        label: 'Risk Activity',
-        data: [12, 19, 3, 5, 2, 3],
-        borderColor: 'rgba(59, 130, 246, 1)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        fill: true,
-        tension: 0.4
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    setTimeout(() => setIsRefreshing(false), 800);
+  };
+
+  const handleApprove = async (reportId) => {
+    try {
+      const { doc, updateDoc } = await import('firebase/firestore');
+      const reportRef = doc(db, 'reports', reportId);
+      await updateDoc(reportRef, {
+        status: 'approved',
+        approvedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Failed to approve report:", error);
+    }
+  };
+
+  // Professional Chart Config
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#0f172a',
+        titleFont: { family: 'Poppins', size: 12 },
+        bodyFont: { family: 'Inter', size: 13 },
+        padding: 12,
+        borderColor: 'rgba(255,255,255,0.05)',
+        borderWidth: 1,
+        displayColors: false
       }
-    ]
+    },
+    scales: {
+      y: {
+        grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false },
+        ticks: { color: '#475569', font: { size: 10, weight: '600' } }
+      },
+      x: {
+        grid: { display: false },
+        ticks: { color: '#475569', font: { size: 10, weight: '600' } }
+      }
+    }
+  };
+
+  const lineData = {
+    labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', 'Current'],
+    datasets: [{
+      data: [12, 18, 15, 22, 19, 25, 21],
+      borderColor: '#10b981',
+      borderWidth: 3,
+      pointRadius: 4,
+      pointBackgroundColor: '#10b981',
+      pointBorderColor: '#020617',
+      pointBorderWidth: 2,
+      tension: 0.4,
+      fill: true,
+      backgroundColor: (context) => {
+        const ctx = context.chart.ctx;
+        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+        gradient.addColorStop(0, 'rgba(16, 185, 129, 0.15)');
+        gradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
+        return gradient;
+      }
+    }]
   };
 
   return (
-    <div style={{ background: '#0f172a', minHeight: '100vh', color: 'white', display: 'flex' }}>
-      {/* Sidebar */}
-      <aside style={{ width: '280px', borderRight: '1px solid #1e293b', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Activity color="var(--primary)" size={28} />
-          <span style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.5px' }}>Admin Panel</span>
+    <div style={{ padding: '40px 60px' }}>
+      {/* Header */}
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '48px' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+            <div className="pill" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', fontSize: '10px' }}>
+              SECURE_ADMIN_PORTAL
+            </div>
+            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981' }} />
+          </div>
+          <h1 style={{ fontSize: '36px', fontWeight: 900, color: 'white', letterSpacing: '-1px' }}>Report Management</h1>
+          <p style={{ color: '#64748b', fontSize: '15px' }}>Verify and approve citizen-reported infrastructure incidents.</p>
+        </div>
+        <div style={{ display: 'flex', gap: '12px' }}>
+           <button onClick={handleRefresh} style={toolButtonStyle}>
+             <RefreshCcw size={16} className={isRefreshing ? 'spin' : ''} /> Refresh List
+           </button>
+        </div>
+      </header>
+
+      {/* Stats Summary */}
+      <div style={statsMatrixGrid}>
+        <AdminStat 
+          label="Total Submissions" 
+          value={reports.length} 
+          icon={<Box size={24} color="#10b981" />} 
+          trend="Live" 
+          glowColor="rgba(16, 185, 129, 0.15)"
+        />
+        <AdminStat 
+          label="Pending Review" 
+          value={reports.filter(r => r.status !== 'approved').length} 
+          icon={<AlertTriangle size={24} color="#f59e0b" />} 
+          trend="Action Needed" 
+          trendColor="#f59e0b"
+          glowColor="rgba(245, 158, 11, 0.1)"
+        />
+        <AdminStat 
+          label="Approved Reports" 
+          value={reports.filter(r => r.status === 'approved').length} 
+          icon={<CheckCircle2 size={24} color="#3b82f6" />} 
+          trend="Verified" 
+          trendColor="#3b82f6"
+          glowColor="rgba(59, 130, 246, 0.1)"
+        />
+      </div>
+
+      {/* Unified Command Grid: SEE REPORTS & APPROVE REPORTS */}
+      <div className="glass-premium" style={mainPanelStyle}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+          <h3 style={{ color: 'white', fontSize: '20px', margin: 0 }}>Incident Command Queue</h3>
+          <div style={{ display: 'flex', gap: '15px' }}>
+            <div style={legendItem}><span style={{ ...legendDot, background: '#10b981' }} /> Approved</div>
+            <div style={legendItem}><span style={{ ...legendDot, background: '#f59e0b' }} /> Pending</div>
+            <div style={legendItem}><span style={{ ...legendDot, background: '#ef4444' }} /> High Risk</div>
+          </div>
         </div>
 
-        <nav style={{ display: 'grid', gap: '8px' }}>
-          <SidebarLink active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon={<BarChart3 size={18}/>} label="System Overview" />
-          <SidebarLink active={activeTab === 'map'} onClick={() => setActiveTab('map')} icon={<MapIcon size={18}/>} label="Asset Map" />
-          <SidebarLink active={activeTab === 'fleet'} onClick={() => setActiveTab('fleet')} icon={<Truck size={18}/>} label="Fleet Management" />
-          <SidebarLink active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={<Settings size={18}/>} label="Core Parameters" />
-        </nav>
-
-        <div style={{ marginTop: 'auto' }}>
-          <div className="card" style={{ background: '#1e293b', border: 'none', padding: '1.5rem' }}>
-            <h4 style={{ color: 'white', fontSize: '14px', marginBottom: '10px' }}>Server Status</h4>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#94a3b8' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }}></span>
-              Operational (Stable)
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main style={{ flex: 1, padding: '3rem', maxHeight: '100vh', overflowY: 'auto' }}>
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
-          <div>
-            <h1 style={{ fontSize: '32px', color: 'white', marginBottom: '4px' }}>Infrastructure Command</h1>
-            <p style={{ color: '#94a3b8' }}>Real-time monitoring of municipal assets and risk profiles.</p>
-          </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button style={toolButtonStyle}><Filter size={16} /> Filters</button>
-            <button style={toolButtonStyle}><Clock size={16} /> Refresh</button>
-          </div>
-        </header>
-
-        {/* Stats Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px', marginBottom: '32px' }}>
-          <AdminStat label="Total Assets" value={globalStats.totalReports || 0} trend="+Real-time" />
-          <AdminStat label="High Risk" value={globalStats.highRiskCount || 0} trend="Live" trendColor={globalStats.highRiskCount > 10 ? '#ef4444' : '#10b981'} />
-          <AdminStat label="Active Units" value="156" trend="+8" />
-          <AdminStat label="Resolved Today" value={globalStats.resolvedCount || 0} trend="Live" />
-        </div>
-
-        {/* Charts & Lists */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '32px' }}>
-          <div className="card" style={{ background: '#1e293b', border: 'none', padding: '2rem' }}>
-            <h3 style={{ color: 'white', marginBottom: '2rem' }}>Real-time Risk Index</h3>
-            <div style={{ height: '300px' }}>
-              <Line data={lineData} options={{ maintainAspectRatio: false, scales: { y: { grid: { color: '#334155' } }, x: { grid: { display: false } } } }} />
-            </div>
-          </div>
-
-          <div className="card" style={{ background: '#1e293b', border: 'none', padding: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-              <h3 style={{ color: 'white', margin: 0 }}>Incident Queue</h3>
-              <ExternalLink size={16} color="#94a3b8" />
-            </div>
-            <div style={{ display: 'grid', gap: '12px' }}>
+        <div style={tableContainer}>
+          <table style={adminTableStyle}>
+            <thead>
+              <tr style={tableHeaderRow}>
+                <th style={tableHeaderCell}>INCIDENT_ID</th>
+                <th style={tableHeaderCell}>TYPE</th>
+                <th style={tableHeaderCell}>LOCATION</th>
+                <th style={tableHeaderCell}>RISK_SCORE</th>
+                <th style={tableHeaderCell}>STATUS</th>
+                <th style={{ ...tableHeaderCell, textAlign: 'right' }}>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
               {reports.map((report) => (
-                <div key={report.id} style={incidentRowStyle}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: '14px' }}>{report.type}</div>
-                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>{report.id.substring(0, 8)} • {new Date(report.createdAt?.seconds * 1000).toLocaleTimeString()}</div>
-                  </div>
-                  <div style={{ 
-                    background: report.score > 70 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(245, 158, 11, 0.2)',
-                    color: report.score > 70 ? '#ef4444' : '#f59e0b',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    fontSize: '12px',
-                    fontWeight: 700
-                  }}>
-                    {report.score}
-                  </div>
-                </div>
+                <tr key={report.id} style={tableRowStyle}>
+                  <td style={tableCellStyle}>
+                    <code style={{ color: '#64748b' }}>#{report.id.substring(0, 8).toUpperCase()}</code>
+                  </td>
+                  <td style={tableCellStyle}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'white', fontWeight: 600 }}>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: report.color }} />
+                      {report.type}
+                    </div>
+                  </td>
+                  <td style={{ ...tableCellStyle, color: '#94a3b8', fontSize: '13px' }}>{report.address}</td>
+                  <td style={tableCellStyle}>
+                    <span style={{ 
+                      color: report.score > 70 ? '#ef4444' : (report.score > 40 ? '#f59e0b' : '#10b981'),
+                      fontWeight: 800
+                    }}>
+                      {report.score} / 100
+                    </span>
+                  </td>
+                  <td style={tableCellStyle}>
+                    <div style={{ 
+                      display: 'inline-flex', padding: '4px 12px', borderRadius: '100px', fontSize: '10px', fontWeight: 800,
+                      background: report.status === 'approved' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                      color: report.status === 'approved' ? '#10b981' : '#f59e0b',
+                      border: `1px solid ${report.status === 'approved' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'}`
+                    }}>
+                      {report.status?.toUpperCase() || 'PENDING'}
+                    </div>
+                  </td>
+                  <td style={{ ...tableCellStyle, textAlign: 'right' }}>
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                      {report.status !== 'approved' && (
+                        <button 
+                          style={approveButtonStyle}
+                          onClick={() => handleApprove(report.id)}
+                        >
+                          APPROVE
+                        </button>
+                      )}
+                      <button style={viewButtonStyle}>DETAILS</button>
+                    </div>
+                  </td>
+                </tr>
               ))}
-            </div>
-          </div>
+            </tbody>
+          </table>
         </div>
-      </main>
+      </div>
     </div>
   );
 };
 
-const SidebarLink = ({ icon, label, active, onClick }) => (
-  <button 
-    onClick={onClick}
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: '12px',
-      padding: '12px 16px',
-      borderRadius: '8px',
-      background: active ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-      color: active ? 'var(--primary)' : '#94a3b8',
-      fontWeight: 600,
-      fontSize: '14px',
-      width: '100%',
-      textAlign: 'left'
-    }}
+// Sub-components
+const AdminStat = ({ label, value, icon, trend, trendColor = '#10b981', glowColor }) => (
+  <motion.div 
+    whileHover={{ y: -4, borderColor: 'rgba(16, 185, 129, 0.3)' }}
+    className="glass-premium" 
+    style={{ padding: '32px', position: 'relative', overflow: 'hidden' }}
   >
-    {icon} {label}
-  </button>
+    <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '80px', height: '80px', background: glowColor, filter: 'blur(30px)', borderRadius: '50%' }} />
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+      <div style={statIconBox}>{icon}</div>
+      <div style={{ ...trendPill, color: trendColor, borderColor: trendColor + '30' }}>{trend}</div>
+    </div>
+    <div>
+      <div style={{ fontSize: '11px', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>{label}</div>
+      <div style={{ fontSize: '32px', fontWeight: 900, color: 'white', letterSpacing: '-1px' }}>{value}</div>
+    </div>
+  </motion.div>
 );
 
-const AdminStat = ({ label, value, trend, trendColor = '#3b82f6' }) => (
-  <div className="card" style={{ background: '#1e293b', border: 'none', padding: '24px' }}>
-    <div style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '8px' }}>{label}</div>
-    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-      <div style={{ fontSize: '28px', fontWeight: 800, color: 'white' }}>{value}</div>
-      <div style={{ fontSize: '12px', fontWeight: 700, color: trendColor }}>{trend}</div>
-    </div>
-  </div>
-);
+// Styles
+const statsMatrixGrid = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(4, 1fr)',
+  gap: '24px',
+  marginBottom: '40px'
+};
 
 const toolButtonStyle = {
-  background: '#1e293b',
-  border: '1px solid #334155',
-  color: 'white',
-  padding: '8px 16px',
-  borderRadius: '8px',
-  fontSize: '14px',
+  padding: '12px 20px',
+  background: '#0f172a',
+  border: '1px solid rgba(255,255,255,0.05)',
+  borderRadius: '12px',
+  color: '#64748b',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '10px',
+  fontWeight: 700,
+  fontSize: '13px'
+};
+
+const mainPanelStyle = {
+  padding: '40px',
+  borderRadius: '24px',
+};
+
+const statIconBox = {
+  padding: '12px',
+  background: 'rgba(255,255,255,0.03)',
+  borderRadius: '14px',
+  border: '1px solid rgba(255,255,255,0.05)'
+};
+
+const trendPill = {
+  padding: '4px 10px',
+  borderRadius: '100px',
+  fontSize: '9px',
+  fontWeight: 900,
+  border: '1px solid',
+  background: 'rgba(255,255,255,0.02)'
+};
+
+const legendItem = {
   display: 'flex',
   alignItems: 'center',
   gap: '8px',
-  fontWeight: 500
+  fontSize: '11px',
+  color: '#475569',
+  fontWeight: 700
 };
 
-const incidentRowStyle = {
-  padding: '12px',
-  background: '#0f172a',
+const legendDot = {
+  width: '8px',
+  height: '8px',
+  borderRadius: '50%'
+};
+
+const tableContainer = {
+  overflowX: 'auto',
+  marginTop: '20px'
+};
+
+const adminTableStyle = {
+  width: '100%',
+  borderCollapse: 'separate',
+  borderSpacing: '0 12px',
+};
+
+const tableHeaderRow = {
+  textAlign: 'left',
+};
+
+const tableHeaderCell = {
+  padding: '12px 20px',
+  color: '#475569',
+  fontSize: '11px',
+  fontWeight: 900,
+  letterSpacing: '1px',
+  textTransform: 'uppercase',
+};
+
+const tableRowStyle = {
+  background: 'rgba(255,255,255,0.02)',
+  transition: 'all 0.2s ease',
+};
+
+const tableCellStyle = {
+  padding: '20px',
+  borderTop: '1px solid rgba(255,255,255,0.05)',
+  borderBottom: '1px solid rgba(255,255,255,0.05)',
+  fontSize: '14px',
+};
+
+const approveButtonStyle = {
+  padding: '8px 16px',
+  background: '#10b981',
+  color: '#020617',
+  border: 'none',
   borderRadius: '8px',
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center'
+  fontSize: '11px',
+  fontWeight: 900,
+  cursor: 'pointer',
+  transition: 'all 0.2s ease',
+};
+
+const viewButtonStyle = {
+  padding: '8px 16px',
+  background: 'rgba(255,255,255,0.05)',
+  color: '#94a3b8',
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: '8px',
+  fontSize: '11px',
+  fontWeight: 900,
+  cursor: 'pointer',
+  transition: 'all 0.2s ease',
 };
 
 export default AdminDashboard;
