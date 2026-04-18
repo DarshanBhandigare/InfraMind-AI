@@ -23,8 +23,10 @@ import { isAdmin } from '../utils/adminConfig';
 import { db } from '../services/firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { processReport } from '../services/dataSyncService';
+import { useTranslation } from 'react-i18next';
 
 const DashboardLayout = ({ children }) => {
+  const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -136,8 +138,8 @@ const DashboardLayout = ({ children }) => {
           {
             id: 'route-admin-dashboard',
             kind: 'route',
-            title: 'Reports Console',
-            subtitle: 'Open the admin incident review dashboard',
+            title: t('layout.navReportsConsole'),
+            subtitle: t('layout.searchRouteAdminSub'),
             action: () => navigate('/admin/dashboard')
           }
         ]
@@ -145,29 +147,29 @@ const DashboardLayout = ({ children }) => {
           {
             id: 'route-dashboard',
             kind: 'route',
-            title: 'Overview',
-            subtitle: 'Go to your dashboard summary',
+            title: t('layout.searchRouteOverview'),
+            subtitle: t('layout.searchRouteOverviewSub'),
             action: () => navigate('/dashboard')
           },
           {
             id: 'route-report',
             kind: 'route',
-            title: 'Report Issue',
-            subtitle: 'Create a new infrastructure report',
+            title: t('layout.searchRouteReport'),
+            subtitle: t('layout.searchRouteReportSub'),
             action: () => navigate('/report')
           },
           {
             id: 'route-map',
             kind: 'route',
-            title: 'Asset Map',
-            subtitle: 'See approved reports on the city map',
+            title: t('layout.searchRouteMap'),
+            subtitle: t('layout.searchRouteMapSub'),
             action: () => navigate('/map')
           },
           {
             id: 'route-alerts',
             kind: 'route',
-            title: 'Alert Hub',
-            subtitle: 'Review infrastructure alerts and trends',
+            title: t('layout.searchRouteAlerts'),
+            subtitle: t('layout.searchRouteAlertsSub'),
             action: () => navigate('/alerts')
           }
         ];
@@ -176,8 +178,8 @@ const DashboardLayout = ({ children }) => {
     const reportItems = reportSource.slice(0, 20).map((report) => ({
       id: `report-${report.id}`,
       kind: 'report',
-      title: report.type || 'Untitled report',
-      subtitle: `${report.status || 'Unknown status'}${report.displayAddress ? ` • ${report.displayAddress}` : ''}`,
+      title: report.type || t('layout.untitledReport'),
+      subtitle: `${report.status || t('layout.reportStatusUnknown')}${report.displayAddress ? ` • ${report.displayAddress}` : ''}`,
       action: () => navigate(`/admin/dashboard?id=${report.id}`)
     }));
 
@@ -185,12 +187,12 @@ const DashboardLayout = ({ children }) => {
       id: `inquiry-${inquiry.id}`,
       kind: 'contact',
       title: inquiry.name,
-      subtitle: `Citizen Inquiry • ${inquiry.email}`,
+      subtitle: t('layout.inquiryPrefix', { email: inquiry.email }),
       action: () => navigate(`/admin/inquiries?id=${inquiry.id}`)
     })) : [];
 
     return [...routeItems, ...reportItems, ...inquiryItems];
-  }, [isAdminRoute, navigate, userReports, adminReports, adminInquiries]);
+  }, [isAdminRoute, navigate, userReports, adminReports, adminInquiries, t, i18n.language]);
 
   const filteredSearchTargets = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -232,7 +234,7 @@ const DashboardLayout = ({ children }) => {
               color: isAdminRoute ? '#0f172a' : 'var(--primary)',
               letterSpacing: '-0.5px' 
             }}>
-              {isAdminRoute ? 'Operations' : 'InfraMind AI'}
+              {isAdminRoute ? t('layout.brandAdmin') : t('layout.brandCitizen')}
             </span>
           </div>
 
@@ -251,10 +253,10 @@ const DashboardLayout = ({ children }) => {
                 overflow: 'hidden',
                 whiteSpace: 'nowrap'
               }}>
-                {user?.email ? user.email.split('@')[0].replace(/[._]/g, ' ') : 'Guest User'}
+                {user?.email ? user.email.split('@')[0].replace(/[._]/g, ' ') : t('layout.guest')}
               </div>
               <div style={{ fontSize: '10px', color: isAdminRoute ? '#64748b' : 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>
-                {isUserAdmin ? 'System Administrator' : 'Citizen Contributor'}
+                {isUserAdmin ? t('layout.roleAdmin') : t('layout.roleCitizen')}
               </div>
             </div>
           </div>
@@ -264,14 +266,14 @@ const DashboardLayout = ({ children }) => {
             {isAdminRoute ? (
               // Specialized Admin Navigation
               <>
-                <div style={sectionLabelStyle(true)}>Command Centre</div>
-                <SidebarLink to="/admin/dashboard" icon={<Wrench size={20} />} label="Reports Console" isAdmin={true} />
-                <SidebarLink to="/admin/inquiries" icon={<Inbox size={20} />} label="Inquiries Console" isAdmin={true} />
-                <SidebarLink to="/admin/improvements" icon={<Sparkles size={20} />} label="Improvement Console" isAdmin={true} />
+                <div style={sectionLabelStyle(true)}>{t('layout.sectionCommand')}</div>
+                <SidebarLink to="/admin/dashboard" icon={<Wrench size={20} />} label={t('layout.navReportsConsole')} isAdmin={true} />
+                <SidebarLink to="/admin/inquiries" icon={<Inbox size={20} />} label={t('layout.navInquiries')} isAdmin={true} />
+                <SidebarLink to="/admin/improvements" icon={<Sparkles size={20} />} label={t('layout.navImprovements')} isAdmin={true} />
 
                 {/* Public Improvement Feed Widget */}
                 <div style={{ marginTop: '32px' }}>
-                  <div style={sectionLabelStyle(true)}>Public Improvement Feed</div>
+                  <div style={sectionLabelStyle(true)}>{t('layout.sectionPublicFeed')}</div>
                   <div style={{ display: 'grid', gap: '8px', padding: '0 16px' }}>
                     {adminSuggestions.length > 0 ? adminSuggestions.map(suggestion => (
                       <div key={suggestion.id} className="glass-premium" style={sidebarWidgetCardStyle}>
@@ -286,14 +288,14 @@ const DashboardLayout = ({ children }) => {
                         </div>
                       </div>
                     )) : (
-                      <div style={emptyWidgetStyle}>No recent suggestions</div>
+                      <div style={emptyWidgetStyle}>{t('layout.emptySuggestions')}</div>
                     )}
                   </div>
                 </div>
 
                 {/* Latest Queries Widget */}
                 <div style={{ marginTop: '24px' }}>
-                  <div style={sectionLabelStyle(true)}>Latest Queries</div>
+                  <div style={sectionLabelStyle(true)}>{t('layout.sectionQueries')}</div>
                   <div style={{ display: 'grid', gap: '8px', padding: '0 16px' }}>
                     {adminInquiries.length > 0 ? adminInquiries.map(inquiry => (
                       <div key={inquiry.id} className="glass-premium" style={sidebarWidgetCardStyle}>
@@ -310,7 +312,7 @@ const DashboardLayout = ({ children }) => {
                         </div>
                       </div>
                     )) : (
-                      <div style={emptyWidgetStyle}>No recent inquiries</div>
+                      <div style={emptyWidgetStyle}>{t('layout.emptyInquiries')}</div>
                     )}
                   </div>
                 </div>
@@ -318,20 +320,20 @@ const DashboardLayout = ({ children }) => {
             ) : (
               // Standard Citizen Navigation
               <>
-                <div style={sectionLabelStyle(false)}>MANAGEMENT</div>
-                <SidebarLink to="/dashboard" icon={<LayoutDashboard size={20} />} label="Overview" isAdmin={false} />
-                <SidebarLink to="/report" icon={<FileText size={20} />} label="Report Issue" isAdmin={false} />
-                <SidebarLink to="/map" icon={<MapIcon size={20} />} label="Asset Map" isAdmin={false} />
-                <SidebarLink to="/alerts" icon={<ShieldCheck size={20} />} label="Alert Hub" isAdmin={false} />
+                <div style={sectionLabelStyle(false)}>{t('layout.sectionManagement')}</div>
+                <SidebarLink to="/dashboard" icon={<LayoutDashboard size={20} />} label={t('layout.navOverview')} isAdmin={false} />
+                <SidebarLink to="/report" icon={<FileText size={20} />} label={t('layout.navReport')} isAdmin={false} />
+                <SidebarLink to="/map" icon={<MapIcon size={20} />} label={t('layout.navMap')} isAdmin={false} />
+                <SidebarLink to="/alerts" icon={<ShieldCheck size={20} />} label={t('layout.navAlerts')} isAdmin={false} />
               </>
             )}
             
             {isUserAdmin && !isAdminRoute && (
-              <SidebarLink to="/admin/dashboard" icon={<Wrench size={20} />} label="Admin Console" isAdmin={false} />
+              <SidebarLink to="/admin/dashboard" icon={<Wrench size={20} />} label={t('layout.navAdminConsole')} isAdmin={false} />
             )}
             
             <button onClick={handleLogout} style={logoutButtonStyle(isAdminRoute)}>
-              <LogOut size={20} /> Terminate Session
+              <LogOut size={20} /> {t('layout.logout')}
             </button>
           </nav>
         </div>
@@ -344,7 +346,7 @@ const DashboardLayout = ({ children }) => {
             <Search size={18} style={topSearchIconStyle} />
             <input
               style={topSearchInputStyle}
-              placeholder="Search reports and admin tools..."
+              placeholder={t('layout.searchPlaceholder')}
               value={searchQuery}
               onFocus={() => setIsSearchOpen(true)}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -372,7 +374,7 @@ const DashboardLayout = ({ children }) => {
 
             {isSearchOpen && (
               <div style={searchDropdownStyle(isAdminRoute)}>
-                <div style={searchDropdownHeaderStyle}>Quick search</div>
+                <div style={searchDropdownHeaderStyle}>{t('layout.quickSearch')}</div>
                 {filteredSearchTargets.length > 0 ? (
                   filteredSearchTargets.map((item) => (
                     <button
@@ -388,7 +390,7 @@ const DashboardLayout = ({ children }) => {
                     </button>
                   ))
                 ) : (
-                  <div style={emptyDropdownStateStyle}>No matches found for this search.</div>
+                  <div style={emptyDropdownStateStyle}>{t('layout.noMatches')}</div>
                 )}
               </div>
             )}
@@ -400,7 +402,7 @@ const DashboardLayout = ({ children }) => {
                 <button
                   style={topIconStyle(isAdminRoute)}
                   onClick={() => setIsNotificationsOpen((current) => !current)}
-                  aria-label="Notifications"
+                  aria-label={t('layout.ariaNotifications')}
                 >
                   <Bell size={20} />
                   {approvedReports.length > 0 && <span style={notificationBadgeStyle}>{approvedReports.length}</span>}
@@ -408,8 +410,8 @@ const DashboardLayout = ({ children }) => {
                 {isNotificationsOpen && (
                   <div style={notificationDropdownStyle}>
                     <div style={notificationHeaderStyle}>
-                      <div style={{ fontWeight: 800, color: '#0f172a' }}>Notifications</div>
-                      <div style={{ fontSize: '12px', color: '#64748b' }}>Issue approval updates</div>
+                      <div style={{ fontWeight: 800, color: '#0f172a' }}>{t('layout.notifications')}</div>
+                      <div style={{ fontSize: '12px', color: '#64748b' }}>{t('layout.notificationsSub')}</div>
                     </div>
                     {approvedReports.length > 0 ? (
                       approvedReports.slice(0, 6).map((report) => (
@@ -418,13 +420,13 @@ const DashboardLayout = ({ children }) => {
                             <CheckCircle2 size={16} color="#0f766e" />
                           </div>
                           <div style={{ flex: 1 }}>
-                            <div style={notificationTitleStyle}>{report.type || 'Report'} was approved</div>
-                            <div style={notificationSubtitleStyle}>{report.address || 'Location pending'}</div>
+                            <div style={notificationTitleStyle}>{t('layout.reportApproved', { type: report.type || 'Report' })}</div>
+                            <div style={notificationSubtitleStyle}>{report.address || t('layout.locationPending')}</div>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <div style={emptyDropdownStateStyle}>You do not have any approved issue updates yet.</div>
+                      <div style={emptyDropdownStateStyle}>{t('layout.noApprovedYet')}</div>
                     )}
                   </div>
                 )}

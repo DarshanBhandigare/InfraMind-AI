@@ -26,6 +26,7 @@ import { generateAIData } from '../services/dataSyncService';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { useTranslation } from 'react-i18next';
 
 // Fix for default marker icon in Leaflet + React
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -41,8 +42,8 @@ const defaultIcon = L.icon({
 const MUMBAI_CENTER = [19.076, 72.8777];
 const CATEGORY_OPTIONS = ['Pothole', 'Drainage', 'Streetlight', 'Water Leakage', 'Traffic System', 'Other'];
 
-const formatPinnedLocation = (location) =>
-  `Pinned location (${location.lat.toFixed(5)}, ${location.lng.toFixed(5)})`;
+const formatPinnedLocation = (t, location) =>
+  t('report.pinnedFmt', { lat: location.lat.toFixed(5), lng: location.lng.toFixed(5) });
 
 const LocationPicker = ({ onLocationSelect }) => {
   useMapEvents({
@@ -55,6 +56,7 @@ const LocationPicker = ({ onLocationSelect }) => {
 };
 
 const CitizenReport = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const fileInputRef = useRef(null);
   const [selectedFileName, setSelectedFileName] = useState('');
@@ -100,14 +102,14 @@ const CitizenReport = () => {
       setFormData((current) => ({
         ...current,
         location,
-        address: nextAddress || formatPinnedLocation(location)
+        address: nextAddress || formatPinnedLocation(t, location)
       }));
     } catch (error) {
       console.warn('Reverse geocoding failed:', error);
       setFormData((current) => ({
         ...current,
         location,
-        address: formatPinnedLocation(location)
+        address: formatPinnedLocation(t, location)
       }));
     } finally {
       setIsResolvingAddress(false);
@@ -136,9 +138,9 @@ const CitizenReport = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!user) return alert("Session expired. Please sign in again.");
-    if (!formData.type) return alert("Please select an issue type");
-    if (!resolvedType) return alert("Please enter a custom issue type");
+    if (!user) return alert(t('report.sessionExpired'));
+    if (!formData.type) return alert(t('report.selectType'));
+    if (!resolvedType) return alert(t('report.customType'));
     
     console.log("Submit Initiated:", { type: resolvedType, hasFile: !!finalFile });
     setLoading(true);
@@ -200,7 +202,7 @@ const CitizenReport = () => {
             imageUrl = demoFallbacks[resolvedType] || 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=1000';
           }
           
-          alert("Network Notice: Cloud Storage blocked by CORS. System has used 'Direct-Injection' to ensure your evidence is captured.");
+          alert(t('report.networkNotice'));
           // ---------------------------------
         }
       }
@@ -224,7 +226,7 @@ const CitizenReport = () => {
       const reportDoc = {
         ...formData,
         type: resolvedType,
-        address: formData.address.trim() || formatPinnedLocation(formData.location),
+        address: formData.address.trim() || formatPinnedLocation(t, formData.location),
         ...riskData,
         aiData: aiMetadata,
         imageUrl: imageUrl, 
@@ -253,7 +255,7 @@ const CitizenReport = () => {
       setTimeout(() => navigate('/dashboard'), 1500);
     } catch (error) {
       console.error("Critical Submission Error:", error);
-      alert("Submission failed. Network error or permission denied. Details: " + (error.message || "Unknown error"));
+      alert(t('report.submitFail', { detail: error.message || t('report.unknownError') }));
       setLoading(false); // Reset loading on error
     } finally {
       // In case of success, we don't set loading to false because we navigate away
@@ -267,8 +269,8 @@ const CitizenReport = () => {
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff' }}>
         <div style={{ textAlign: 'center' }}>
           <CheckCircle size={80} color="var(--safe)" style={{ marginBottom: '24px' }} />
-          <h1 style={{ fontSize: '32px', marginBottom: '8px' }}>Report Received</h1>
-          <p style={{ color: 'var(--text-muted)' }}>Our AI Engine is prioritizing your submission...</p>
+          <h1 style={{ fontSize: '32px', marginBottom: '8px' }}>{t('report.receivedTitle')}</h1>
+          <p style={{ color: 'var(--text-muted)' }}>{t('report.receivedSub')}</p>
         </div>
       </div>
     );
@@ -277,9 +279,9 @@ const CitizenReport = () => {
   const renderPublicView = () => (
     <div className="dot-grid" style={{ minHeight: '100vh', paddingTop: '40px' }}>
       <div className="container" style={{ paddingBottom: '60px' }}>
-        <h1 style={{ fontSize: '56px', marginBottom: '16px', letterSpacing: '-2px' }}>Report an Issue</h1>
+        <h1 style={{ fontSize: '56px', marginBottom: '16px', letterSpacing: '-2px' }}>{t('report.publicTitle')}</h1>
         <p style={{ fontSize: '18px', color: 'var(--text-muted)', marginBottom: '64px', maxWidth: '600px' }}>
-          Help us maintain the city's pulse. Your reports directly inform maintenance priorities and infrastructure investments.
+          {t('report.publicLead')}
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '64px', alignItems: 'start' }}>
@@ -289,21 +291,21 @@ const CitizenReport = () => {
               <div style={{ display: 'grid', gap: '32px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                   <div>
-                    <label style={labelStyle}>CATEGORY</label>
+                    <label style={labelStyle}>{t('report.category')}</label>
                     <select className="input-field" disabled>
-                      <option>Select Issue Type</option>
+                      <option>{t('report.selectIssueType')}</option>
                     </select>
                   </div>
                   <div>
-                    <label style={labelStyle}>SEVERITY</label>
+                    <label style={labelStyle}>{t('report.severity')}</label>
                     <select className="input-field" disabled>
-                      <option>Low (Cosmetic/Minor)</option>
+                      <option>{t('report.severityLow')}</option>
                     </select>
                   </div>
                 </div>
                 <div>
-                  <label style={labelStyle}>PRECISE LOCATION</label>
-                  <input className="input-field" disabled placeholder="Sign in to define location" />
+                  <label style={labelStyle}>{t('report.location')}</label>
+                  <input className="input-field" disabled placeholder={t('report.signInForLocation')} />
                 </div>
               </div>
             </div>
@@ -322,12 +324,12 @@ const CitizenReport = () => {
                   <div style={{ width: '64px', height: '64px', background: 'var(--primary)', color: 'white', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
                     <Shield size={32} />
                   </div>
-                  <h3 style={{ fontSize: '24px', marginBottom: '12px' }}>Authentication Required</h3>
+                  <h3 style={{ fontSize: '24px', marginBottom: '12px' }}>{t('report.authTitle')}</h3>
                   <p style={{ color: 'var(--text-muted)', fontSize: '15px', marginBottom: '32px' }}>
-                    To ensure accountability and track progress, an account is required to submit infrastructure reports.
+                    {t('report.authBody')}
                   </p>
                   <div style={{ display: 'grid', gap: '12px' }}>
-                    <Link to="/login" className="btn-primary" style={{ padding: '16px', textDecoration: 'none' }}>Sign in to Submit &rarr;</Link>
+                    <Link to="/login" className="btn-primary" style={{ padding: '16px', textDecoration: 'none' }}>{t('report.signInSubmit')}</Link>
                   </div>
                 </div>
               </div>
@@ -336,8 +338,8 @@ const CitizenReport = () => {
           
           <div style={{ display: 'grid', gap: '22px' }}>
             <div className="card">
-               <h4 style={{ ...labelStyle, color: 'var(--primary)' }}>Real-time Accountability</h4>
-               <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Every report is time-stamped and assigned a priority score instantly by our predictive maintenance engine.</p>
+               <h4 style={{ ...labelStyle, color: 'var(--primary)' }}>{t('report.accountabilityTitle')}</h4>
+               <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>{t('report.accountabilityBody')}</p>
             </div>
           </div>
         </div>
@@ -348,9 +350,9 @@ const CitizenReport = () => {
   const renderMemberView = () => (
     <div style={{ padding: '40px' }}>
       <div style={{ marginBottom: '40px' }}>
-        <h1 style={{ fontSize: '36px', marginBottom: '8px' }}>Asset Report Entry</h1>
+        <h1 style={{ fontSize: '36px', marginBottom: '8px' }}>{t('report.entryTitle')}</h1>
         <p style={{ color: 'var(--text-muted)' }}>
-          Logged in as {user.email}. Precisely define the infrastructure issue for rapid response.
+          {t('report.entryLead', { email: user.email })}
         </p>
       </div>
 
@@ -359,11 +361,11 @@ const CitizenReport = () => {
           <div className="card" style={{ padding: '32px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', color: 'var(--primary)' }}>
               <Shield size={24} />
-              <h3 style={{ fontSize: '18px' }}>Technical Parameters</h3>
+              <h3 style={{ fontSize: '18px' }}>{t('report.technicalTitle')}</h3>
             </div>
             <div style={{ display: 'grid', gap: '24px' }}>
               <div>
-                <label style={labelStyle}>INFRASTRUCTURE CATEGORY</label>
+                <label style={labelStyle}>{t('report.infraCategory')}</label>
                 <div style={{ position: 'relative' }}>
                   <select 
                     className="input-field" 
@@ -371,9 +373,9 @@ const CitizenReport = () => {
                     value={formData.type}
                     onChange={(e) => setFormData({...formData, type: e.target.value})}
                   >
-                    <option value="">Select asset class</option>
+                    <option value="">{t('report.selectAsset')}</option>
                     {CATEGORY_OPTIONS.map((option) => (
-                      <option key={option} value={option}>{option}</option>
+                      <option key={option} value={option}>{t(`report.categories.${option.replace(/\s/g, '_')}`)}</option>
                     ))}
                   </select>
                   <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
@@ -385,13 +387,13 @@ const CitizenReport = () => {
                       style={{ background: '#F8F9FB', border: '1px solid var(--border)' }}
                       value={formData.customType}
                       onChange={(e) => setFormData({ ...formData, customType: e.target.value })}
-                      placeholder="Enter custom asset class"
+                      placeholder={t('report.customAssetPlaceholder')}
                     />
                   </div>
                 )}
               </div>
               <div>
-                <label style={labelStyle}>SEVERITY ESTIMATE</label>
+                <label style={labelStyle}>{t('report.severityEstimate')}</label>
                 <div style={{ position: 'relative' }}>
                   <select 
                     className="input-field" 
@@ -399,20 +401,20 @@ const CitizenReport = () => {
                     value={formData.severity}
                     onChange={(e) => setFormData({...formData, severity: e.target.value})}
                   >
-                    <option value="1">Low - Minor Utility Impact</option>
-                    <option value="2">Medium - Functional Impairment</option>
-                    <option value="3">High - Safety Hazard</option>
-                    <option value="4">Critical - Immediate Structural Threat</option>
+                    <option value="1">{t('report.sev1')}</option>
+                    <option value="2">{t('report.sev2')}</option>
+                    <option value="3">{t('report.sev3')}</option>
+                    <option value="4">{t('report.sev4')}</option>
                   </select>
                   <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
                 </div>
               </div>
               <div>
-                <label style={labelStyle}>TECHNICAL DESCRIPTION</label>
+                <label style={labelStyle}>{t('report.techDesc')}</label>
                 <textarea 
                   className="input-field" 
                   rows="5" 
-                  placeholder="Describe the visible damage, approximate dimensions, and impact on city services..."
+                  placeholder={t('report.descPlaceholder')}
                   style={{ background: '#F8F9FB', border: '1px solid var(--border)' }}
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
@@ -424,7 +426,7 @@ const CitizenReport = () => {
           <div className="card" style={{ padding: '32px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', color: 'var(--primary)' }}>
               <Upload size={24} />
-              <h3 style={{ fontSize: '18px' }}>Evidence Upload</h3>
+              <h3 style={{ fontSize: '18px' }}>{t('report.evidenceTitle')}</h3>
             </div>
             <div style={{ 
               border: '2px dashed var(--border)', 
@@ -439,9 +441,9 @@ const CitizenReport = () => {
               {selectedFileName ? (
                 <div style={{ color: 'var(--primary)', fontWeight: 700, marginBottom: '8px' }}>{selectedFileName}</div>
               ) : (
-                <div style={{ fontWeight: 700, marginBottom: '4px' }}>Evidence required (JPG/PNG)</div>
+                <div style={{ fontWeight: 700, marginBottom: '4px' }}>{t('report.evidenceRequired')}</div>
               )}
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '24px' }}>Maximum file size: 10MB</div>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '24px' }}>{t('report.maxSize')}</div>
               <input 
                 ref={fileInputRef} 
                 type="file" 
@@ -453,7 +455,7 @@ const CitizenReport = () => {
                 onClick={() => fileInputRef.current.click()}
                 style={{ padding: '10px 24px', background: 'white' }}
               >
-                Browse Files
+                {t('report.browse')}
               </button>
             </div>
           </div>
@@ -462,11 +464,11 @@ const CitizenReport = () => {
         <div className="card" style={{ padding: '32px', height: 'fit-content' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', color: 'var(--primary)' }}>
             <MapPin size={24} />
-            <h3 style={{ fontSize: '18px' }}>Geographic Context</h3>
+            <h3 style={{ fontSize: '18px' }}>{t('report.geoTitle')}</h3>
           </div>
           <div style={{ display: 'grid', gap: '24px' }}>
             <div>
-              <label style={labelStyle}>PRIMARY ADDRESS</label>
+              <label style={labelStyle}>{t('report.primaryAddress')}</label>
               <div style={{ position: 'relative' }}>
                 <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                 <input 
@@ -477,12 +479,12 @@ const CitizenReport = () => {
                     setFormData({...formData, address: e.target.value});
                   }}
                   style={{ paddingLeft: '48px', background: '#F8F9FB', border: '1px solid var(--border)' }} 
-                  placeholder="Enter specific ward or street address..." 
+                  placeholder={t('report.addressPlaceholder')} 
                 />
               </div>
               {isResolvingAddress && (
                 <div style={{ fontSize: '12px', color: 'var(--primary)', marginTop: '8px', fontWeight: 600 }}>
-                  Resolving address from selected pin...
+                  {t('report.resolving')}
                 </div>
               )}
             </div>
@@ -494,7 +496,7 @@ const CitizenReport = () => {
                </MapContainer>
                <div style={{ position: 'absolute', right: '16px', top: '16px', zIndex: 1000 }}>
                   <div className="glass" style={{ padding: '12px 16px', borderRadius: '12px', fontSize: '11px', fontWeight: 800, color: 'var(--primary)' }}>
-                     CLICK MAP TO SET PIN
+                     {t('report.clickMap')}
                   </div>
                </div>
             </div>
@@ -507,7 +509,7 @@ const CitizenReport = () => {
           <div style={{ width: '24px', height: '24px', background: 'var(--safe)', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <CheckCircle size={14} />
           </div>
-          <span style={{ fontSize: '14px' }}>Data will be processed into the city's maintenance grid within 15 minutes.</span>
+          <span style={{ fontSize: '14px' }}>{t('report.footerNote')}</span>
         </div>
         <button 
           className="btn-primary" 
@@ -515,7 +517,7 @@ const CitizenReport = () => {
           disabled={loading}
           style={{ padding: '16px 48px', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}
         >
-          {loading ? 'Processing...' : <><ArrowRight size={20} /> Finalize Report</>}
+          {loading ? t('report.processing') : <><ArrowRight size={20} /> {t('report.finalize')}</>}
         </button>
       </div>
     </div>

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ScrollReveal from '../components/ScrollReveal';
+import { useTranslation } from 'react-i18next';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -48,6 +49,7 @@ const defaultIcon = L.icon({
 const MUMBAI_CENTER = [19.076, 72.8777];
 
 const Dashboard = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [reports, setReports] = useState([]);
   const [stats, setStats] = useState({ total: 0, high: 0, resolved: '0%' });
@@ -65,7 +67,7 @@ const Dashboard = () => {
         createdAt: serverTimestamp(),
         status: 'pending'
       });
-      alert("Infrastructure suggestion submitted! Thank you for the contribution.");
+      alert(t('dashboard.suggestion.success'));
       setSuggestion('');
     } catch (err) {
       console.error("Suggestion error:", err);
@@ -130,7 +132,7 @@ const Dashboard = () => {
   }, [reports]);
 
   const chartData = {
-    labels: ['Safe', 'Watch', 'High', 'Critical'],
+    labels: [t('dashboard.sentiment.safeLabel'), t('dashboard.sentiment.watchLabel'), t('dashboard.sentiment.highLabel'), t('dashboard.sentiment.criticalLabel')],
     datasets: [{
       data: riskDistribution,
       backgroundColor: ['#36B37E', '#FFAB00', '#FF8B00', '#FF5630'],
@@ -144,11 +146,11 @@ const Dashboard = () => {
         <ScrollReveal direction="up" duration={0.6}>
           <header style={{ marginBottom: '60px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
             <div>
-              <h1 style={{ fontSize: '48px', marginBottom: '8px', letterSpacing: '-1px' }}> Overview</h1>
-              <p style={{ fontSize: '18px', color: 'var(--text-muted)' }}>Real-time metropolitan infrastructure overview.</p>
+              <h1 style={{ fontSize: '48px', marginBottom: '8px', letterSpacing: '-1px' }}> {t('dashboard.header.title')}</h1>
+              <p style={{ fontSize: '18px', color: 'var(--text-muted)' }}>{t('dashboard.header.subtitle')}</p>
             </div>
             <div className="pill pill-blue" style={{ height: 'fit-content' }}>
-              <TrendingUp size={12} /> System Health: {systemHealth}
+              <TrendingUp size={12} /> {t('dashboard.header.health')}: {systemHealth}
             </div>
           </header>
         </ScrollReveal>
@@ -156,13 +158,13 @@ const Dashboard = () => {
         {/* Top Stats Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '60px' }}>
           <ScrollReveal direction="up" delay={0.1}>
-            <StatBox icon={<Shield color="var(--primary)" />} label="Total Issues" value={stats.total} bg="#deebff" />
+            <StatBox icon={<Shield color="var(--primary)" />} label={t('dashboard.stats.total')} value={stats.total} bg="#deebff" />
           </ScrollReveal>
           <ScrollReveal direction="up" delay={0.2}>
-            <StatBox icon={<AlertTriangle color="var(--critical)" />} label="High Risk Zones" value={stats.high} bg="#ffebe6" />
+            <StatBox icon={<AlertTriangle color="var(--critical)" />} label={t('dashboard.stats.high')} value={stats.high} bg="#ffebe6" />
           </ScrollReveal>
           <ScrollReveal direction="up" delay={0.3}>
-            <StatBox icon={<CheckCircle color="var(--safe)" />} label="Resolved Issues" value={stats.resolved} bg="#e3fcef" />
+            <StatBox icon={<CheckCircle color="var(--safe)" />} label={t('dashboard.stats.resolved')} value={stats.resolved} bg="#e3fcef" />
           </ScrollReveal>
         </div>
 
@@ -188,7 +190,7 @@ const Dashboard = () => {
                         <strong style={{ display: 'block', marginBottom: '4px' }}>{report.type}</strong>
                         <span style={{ fontSize: '12px', color: '#64748b' }}>{report.displayAddress}</span>
                         <div style={{ marginTop: '8px', fontWeight: 700, color: report.color, fontSize: '12px' }}>
-                          Risk Score: {report.score}
+                          {t('dashboard.map.risk')}: {report.score}
                         </div>
                       </div>
                     </Popup>
@@ -198,8 +200,8 @@ const Dashboard = () => {
 
               <div style={{ position: 'absolute', bottom: 30, left: 30, zIndex: 1000, pointerEvents: 'none' }}>
                 <div className="glass" style={{ padding: '20px 24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.4)' }}>
-                  <h2 style={{ fontSize: '24px', marginBottom: '4px', color: '#1e293b' }}>Infrastructure Health Map</h2>
-                  <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>Metropolitan grid sensor data and report heatmaps.</p>
+                  <h2 style={{ fontSize: '24px', marginBottom: '4px', color: '#1e293b' }}>{t('dashboard.map.title')}</h2>
+                  <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>{t('dashboard.map.subtitle')}</p>
                 </div>
               </div>
             </div>
@@ -209,14 +211,14 @@ const Dashboard = () => {
           <div style={{ display: 'grid', gap: '32px' }}>
             <ScrollReveal direction="right" delay={0.5}>
               <div className="card">
-                <h3 style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--primary)', marginBottom: '24px', letterSpacing: '1px' }}>Risk Sentiment</h3>
+                <h3 style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--primary)', marginBottom: '24px', letterSpacing: '1px' }}>{t('dashboard.sentiment.title')}</h3>
                 <div style={{ maxWidth: '200px', margin: '0 auto' }}>
                   <Pie data={chartData} options={{ plugins: { legend: { display: false } } }} />
                 </div>
                 <div style={{ marginTop: '24px', display: 'grid', gap: '12px' }}>
-                  <LegendRow color="#36B37E" label="Safe Zones" value={`${Math.round(riskDistribution[0])}%`} />
-                  <LegendRow color="#FFAB00" label="Watch Required" value={`${Math.round(riskDistribution[1])}%`} />
-                  <LegendRow color="#FF5630" label="Critical Response" value={`${Math.round(riskDistribution[3])}%`} />
+                  <LegendRow color="#36B37E" label={t('dashboard.sentiment.safe')} value={`${Math.round(riskDistribution[0])}%`} />
+                  <LegendRow color="#FFAB00" label={t('dashboard.sentiment.watch')} value={`${Math.round(riskDistribution[1])}%`} />
+                  <LegendRow color="#FF5630" label={t('dashboard.sentiment.critical')} value={`${Math.round(riskDistribution[3])}%`} />
                 </div>
               </div>
             </ScrollReveal>
@@ -226,13 +228,13 @@ const Dashboard = () => {
               <div className="card" style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #ffffff 100%)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
                   <MessageSquare size={18} color="var(--primary)" />
-                  <h3 style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--primary)', letterSpacing: '1px' }}>Improve Our City</h3>
+                  <h3 style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--primary)', letterSpacing: '1px' }}>{t('dashboard.suggestion.title')}</h3>
                 </div>
                 <p style={{ fontSize: '13px', color: '#475569', marginBottom: '16px', lineHeight: 1.5 }}>
-                  Have an idea for a better bridge, safer road, or new infrastructure? Let us know.
+                  {t('dashboard.suggestion.subtitle')}
                 </p>
                 <textarea
-                  placeholder="e.g. Add reinforced railings to Wadala Bridge..."
+                  placeholder={t('dashboard.suggestion.placeholder')}
                   value={suggestion}
                   onChange={(e) => setSuggestion(e.target.value)}
                   style={{
@@ -254,7 +256,7 @@ const Dashboard = () => {
                   className="btn-primary"
                   style={{ width: '100%', padding: '12px', borderRadius: '10px', fontSize: '13px', opacity: (submittingNote || !suggestion.trim()) ? 0.6 : 1 }}
                 >
-                  {submittingNote ? 'Submitting...' : <><Send size={14} style={{ marginRight: '6px' }} /> Submit Suggestion</>}
+                  {submittingNote ? t('dashboard.suggestion.submitting') : <><Send size={14} style={{ marginRight: '6px' }} /> {t('dashboard.suggestion.submit')}</>}
                 </button>
               </div>
             </ScrollReveal>

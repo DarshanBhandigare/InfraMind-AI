@@ -13,8 +13,10 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { isAdmin } from '../utils/adminConfig';
+import { useTranslation } from 'react-i18next';
 
 const AdminLogin = () => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -29,7 +31,7 @@ const AdminLogin = () => {
     setError('');
 
     if (!isAdmin(email) || password !== 'admin@123') {
-      setError('Only authorized administrator credentials can access this console.');
+      setError(t('adminLogin.errorUnauthorized'));
       return;
     }
 
@@ -45,12 +47,12 @@ const AdminLogin = () => {
           await signup(email, password);
           setTimeout(() => navigate('/admin/dashboard'), 1200);
         } catch (signupErr) {
-          setError(signupErr.message || 'Unable to create the administrator account.');
+          setError(signupErr.message || t('adminLogin.errorCreate'));
           setAuthSequence(false);
           setLoading(false);
         }
       } else {
-        setError(err.message || 'Unable to sign in right now.');
+        setError(err.message || t('adminLogin.errorSignIn'));
         setAuthSequence(false);
         setLoading(false);
       }
@@ -71,23 +73,23 @@ const AdminLogin = () => {
         >
           <Link to="/" style={backLinkStyle}>
             <ArrowLeft size={16} />
-            Back to home
+            {t('adminLogin.back')}
           </Link>
 
           <div style={heroBadgeStyle}>
             <Sparkles size={14} />
-            Admin access
+            {t('adminLogin.badge')}
           </div>
 
-          <h1 style={heroTitleStyle}>Manage city reports with the same calm, clean workspace.</h1>
+          <h1 style={heroTitleStyle}>{t('adminLogin.heroTitle')}</h1>
           <p style={heroTextStyle}>
-            Sign in to review citizen submissions, validate evidence, and coordinate action from the operations dashboard.
+            {t('adminLogin.heroText')}
           </p>
 
           <div style={featureListStyle}>
-            <FeatureItem text="Auto image verification for submitted evidence" />
-            <FeatureItem text="Live incident review and approval workflow" />
-            <FeatureItem text="Clean operations dashboard with map context" />
+            <FeatureItem text={t('adminLogin.feat1')} />
+            <FeatureItem text={t('adminLogin.feat2')} />
+            <FeatureItem text={t('adminLogin.feat3')} />
           </div>
         </motion.div>
 
@@ -102,9 +104,9 @@ const AdminLogin = () => {
               <Shield size={28} color="#2563eb" />
             </div>
             <div>
-              <p style={eyebrowStyle}>InfraMind Admin</p>
-              <h2 style={titleStyle}>Administrator Login</h2>
-              <p style={subtitleStyle}>Use the approved admin email and password to open the command centre.</p>
+              <p style={eyebrowStyle}>{t('adminLogin.eyebrow')}</p>
+              <h2 style={titleStyle}>{t('adminLogin.cardTitle')}</h2>
+              <p style={subtitleStyle}>{t('adminLogin.cardSubtitle')}</p>
             </div>
           </div>
 
@@ -124,7 +126,7 @@ const AdminLogin = () => {
 
           <form onSubmit={handleSubmit} style={formStyle}>
             <div style={fieldGroupStyle}>
-              <label style={labelStyle}>Admin email</label>
+              <label style={labelStyle}>{t('adminLogin.emailLabel')}</label>
               <div style={inputWrapStyle}>
                 <User size={18} style={iconStyle} />
                 <input
@@ -133,13 +135,13 @@ const AdminLogin = () => {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   style={inputStyle}
-                  placeholder="admin@yourcity.gov"
+                  placeholder={t('adminLogin.emailPh')}
                 />
               </div>
             </div>
 
             <div style={fieldGroupStyle}>
-              <label style={labelStyle}>Password</label>
+              <label style={labelStyle}>{t('adminLogin.passwordLabel')}</label>
               <div style={inputWrapStyle}>
                 <Lock size={18} style={iconStyle} />
                 <input
@@ -148,7 +150,7 @@ const AdminLogin = () => {
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   style={inputStyle}
-                  placeholder="Enter admin password"
+                  placeholder={t('adminLogin.passwordPh')}
                 />
               </div>
             </div>
@@ -157,12 +159,12 @@ const AdminLogin = () => {
               {authSequence ? (
                 <>
                   <Activity size={18} className="spin" />
-                  Opening dashboard...
+                  {t('adminLogin.opening')}
                 </>
               ) : (
                 <>
                   <Shield size={18} />
-                  Sign in to admin
+                  {t('adminLogin.signIn')}
                 </>
               )}
             </button>
@@ -171,7 +173,7 @@ const AdminLogin = () => {
           <div style={footerStyle}>
             <div style={footerNoteStyle}>
               <CheckCircle2 size={16} color="#0f766e" />
-              <span>Protected access for authorized municipal administrators.</span>
+              <span>{t('adminLogin.footerNote')}</span>
             </div>
           </div>
         </motion.div>

@@ -2,9 +2,13 @@ import React from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Shield } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+
 
 const Navbar = () => {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
+
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -64,13 +68,14 @@ const Navbar = () => {
           flex: '1',
           overflow: 'hidden' 
         }}>
-          <NavLink to="/" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Home</NavLink>
-          <NavLink to="/map" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Map</NavLink>
-          <NavLink to="/dashboard" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Dashboard</NavLink>
-          <NavLink to="/alerts" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Alerts</NavLink>
-          <NavLink to="/hub" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Escalation Hub</NavLink>
-          <NavLink to="/about" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Resources</NavLink>
-          <NavLink to="/contact" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>Contact</NavLink>
+          <NavLink to="/" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>{t('nav.home')}</NavLink>
+          <NavLink to="/map" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>{t('nav.map')}</NavLink>
+          <NavLink to="/dashboard" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>{t('nav.dashboard')}</NavLink>
+          <NavLink to="/alerts" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>{t('nav.alerts')}</NavLink>
+          <NavLink to="/hub" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>{t('nav.hub')}</NavLink>
+          <NavLink to="/about" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>{t('nav.resources')}</NavLink>
+          <NavLink to="/contact" className="nav-item-liquid" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>{t('nav.contact')}</NavLink>
+
         </div>
 
         {/* Right Section: Auth/Actions */}
@@ -89,21 +94,22 @@ const Navbar = () => {
                   whiteSpace: 'nowrap'
                 }}
               >
-                Logout
+                {t('nav.logout')}
               </button>
               <Link to="/report" className="btn-liquid" style={{ textDecoration: 'none', fontSize: '14px', whiteSpace: 'nowrap' }}>
-                Report Issue
+                {t('nav.reportIssue')}
               </Link>
             </>
           ) : (
             <>
               <NavLink to="/admin/login" className="nav-item-liquid" style={{ textDecoration: 'none', fontSize: '14px', whiteSpace: 'nowrap' }}>
-                Admin Login
+                {t('nav.adminLogin')}
               </NavLink>
               <Link to="/report" className="btn-liquid" style={{ textDecoration: 'none', fontSize: '14px', whiteSpace: 'nowrap' }}>
-                Report Issue
+                {t('nav.reportIssue')}
               </Link>
             </>
+
           )}
         </div>
       </nav>

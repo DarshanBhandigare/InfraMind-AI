@@ -29,10 +29,13 @@ import {
 import { Doughnut, Line } from 'react-chartjs-2';
 import { db } from '../services/firebase';
 import { processReport } from '../services/dataSyncService';
+import { useTranslation } from 'react-i18next';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Tooltip, Legend, Filler);
 
 const severityOptions = ['All', 'Critical', 'High Risk', 'Medium', 'Low'];
+
+const severityOptionTKey = (option) => `alerts.severityOption.${String(option).replace(/ /g, '_')}`;
 
 const getSeverityLabel = (score = 0) => {
   if (score >= 85) return 'Critical';
@@ -68,6 +71,7 @@ const getMonthBuckets = (count = 7) => {
 };
 
 const Alerts = () => {
+  const { t, i18n } = useTranslation();
   const [alerts, setAlerts] = useState([]);
   const [filter, setFilter] = useState('All');
   const [currentView, setCurrentView] = useState('alerts');
@@ -126,7 +130,7 @@ const Alerts = () => {
       labels: monthBuckets.map((bucket) => bucket.label),
       datasets: [
         {
-          label: 'Reports',
+          label: t('alerts.chartReports'),
           data: monthBuckets.map((bucket) =>
             allAlerts.filter((alert) => {
               const date = new Date(alert.createdAt);
@@ -141,7 +145,7 @@ const Alerts = () => {
           pointHoverRadius: 5
         },
         {
-          label: 'Closed',
+          label: t('alerts.chartClosed'),
           data: monthBuckets.map((bucket) =>
             allAlerts.filter((alert) => {
               const date = new Date(alert.createdAt);
@@ -161,7 +165,7 @@ const Alerts = () => {
         }
       ]
     };
-  }, [allAlerts]);
+  }, [allAlerts, t, i18n.language]);
 
   const categoryCounts = useMemo(() => {
     const counts = { Pothole: 0, Drainage: 0, Lighting: 0, Pipeline: 0, Other: 0 };
@@ -178,7 +182,7 @@ const Alerts = () => {
 
   const categoryChartData = useMemo(
     () => ({
-      labels: ['Potholes', 'Drains', 'Streetlights', 'Pipelines', 'Other'],
+      labels: [t('alerts.catPotholes'), t('alerts.catDrains'), t('alerts.catStreetlights'), t('alerts.catPipelines'), t('alerts.catOther')],
       datasets: [
         {
           data: categoryCounts,
@@ -188,7 +192,7 @@ const Alerts = () => {
         }
       ]
     }),
-    [categoryCounts]
+    [categoryCounts, t, i18n.language]
   );
 
   const tableRows = useMemo(
@@ -202,13 +206,13 @@ const Alerts = () => {
         .map((alert) => ({
           id: `#${alert.id.substring(0, 6).toUpperCase()}`,
           issue: alert.type,
-          ward: alert.displayAddress?.split(',')[0] || 'Mumbai Central',
+          ward: alert.displayAddress?.split(',')[0] || t('alerts.wardDefault'),
           risk: `${alert.score} ${getSeverityLabel(alert.score).toUpperCase()}`,
           status: alert.status,
           reported: new Date(alert.createdAt).toLocaleDateString(),
           color: alert.color
         })),
-    [allAlerts]
+    [allAlerts, t]
   );
 
   return (
@@ -226,24 +230,24 @@ const Alerts = () => {
                 textTransform: currentView === 'overview' ? 'uppercase' : 'none'
               }}
             >
-              {currentView === 'overview' ? 'Authority Panel' : 'Mumbai Control'}
+              {currentView === 'overview' ? t('alerts.authorityPanel') : t('alerts.mumbaiControl')}
             </div>
-            <h2 style={{ fontSize: '38px', lineHeight: 1, marginBottom: '8px', color: '#091E42' }}>City Control</h2>
+            <h2 style={{ fontSize: '38px', lineHeight: 1, marginBottom: '8px', color: '#091E42' }}>{t('alerts.cityControl')}</h2>
             <div style={{ color: currentView === 'overview' ? '#8ea0c9' : 'var(--text-muted)', fontSize: '16px' }}>
-              {currentView === 'overview' ? 'BMC Mumbai' : 'BMC Central District'}
+              {currentView === 'overview' ? t('alerts.bmcMumbai') : t('alerts.bmcCentral')}
             </div>
           </div>
 
           <div style={{ display: 'grid', gap: '8px', marginTop: '28px' }}>
             <SideNavItem
               icon={<LayoutGrid size={20} />}
-              label="Overview"
+              label={t('alerts.sideOverview')}
               active={currentView === 'overview'}
               onClick={() => setCurrentView('overview')}
             />
             <SideNavItem
               icon={<AlertTriangle size={20} />}
-              label="Alerts"
+              label={t('alerts.sideAlerts')}
               active={currentView === 'alerts'}
               onClick={() => setCurrentView('alerts')}
             />
@@ -252,14 +256,14 @@ const Alerts = () => {
           <div style={{ marginTop: 'auto', paddingTop: '28px', borderTop: '1px solid var(--border)' }}>
             {currentView === 'overview' ? (
               <div style={{ display: 'grid', gap: '8px' }}>
-                <div style={{ fontSize: '13px', color: '#7f8db4' }}>Logged in as</div>
-                <div style={{ fontSize: '18px', fontWeight: 700, color: '#091E42' }}>Municipal Officer</div>
-                <div style={{ fontSize: '15px', color: '#2cb9ff' }}>BMC Mumbai</div>
+                <div style={{ fontSize: '13px', color: '#7f8db4' }}>{t('alerts.loggedInAs')}</div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: '#091E42' }}>{t('alerts.officer')}</div>
+                <div style={{ fontSize: '15px', color: '#2cb9ff' }}>{t('alerts.bmcMumbai')}</div>
               </div>
             ) : (
               <>
                 <div style={{ fontSize: '12px', fontWeight: 800, letterSpacing: '1.4px', textTransform: 'uppercase', color: '#15803d', marginBottom: '18px' }}>
-                  System Status: Active
+                  {t('alerts.systemStatus')}
                 </div>
               </>
             )}
@@ -314,6 +318,7 @@ const HighlightedText = ({ text, highlight }) => {
 };
 
 const AlertsPanel = ({ filter, setFilter, filteredAlerts, overviewStats }) => {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchRef = useRef(null);
@@ -369,7 +374,7 @@ const AlertsPanel = ({ filter, setFilter, filteredAlerts, overviewStats }) => {
             <Search size={20} color={showSuggestions ? 'var(--primary)' : 'var(--text-muted)'} />
             <input
               className="input-field"
-              placeholder="Search alerts, areas, or status..."
+              placeholder={t('alerts.searchPlaceholder')}
               value={searchQuery}
               onChange={(event) => {
                 setSearchQuery(event.target.value);
@@ -437,16 +442,16 @@ const AlertsPanel = ({ filter, setFilter, filteredAlerts, overviewStats }) => {
 
       <section style={{ marginTop: '28px', marginBottom: '34px' }}>
         <h1 style={{ fontSize: '48px', lineHeight: 1, letterSpacing: '-1px', marginBottom: '16px' }}>
-          InfraMind AI <span style={{ color: 'var(--primary)' }}>Alerts</span>
+          {t('alerts.title')} <span style={{ color: 'var(--primary)' }}>{t('alerts.titleAccent')}</span>
         </h1>
         <p style={{ maxWidth: '820px', fontSize: '16px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-          Real-time intelligence feed monitoring the pulse of Mumbai infrastructure. Predictive analysis and critical response coordination for BMC teams.
+          {t('alerts.description')}
         </p>
       </section>
 
       <section style={controlsRowStyle}>
         <div style={filterGroupStyle}>
-          <div style={filterLabelStyle}>Severity</div>
+          <div style={filterLabelStyle}>{t('alerts.severityLabel')}</div>
           {severityOptions.map((option) => (
             <button
               key={option}
@@ -458,7 +463,7 @@ const AlertsPanel = ({ filter, setFilter, filteredAlerts, overviewStats }) => {
                 boxShadow: filter === option ? '0 6px 20px rgba(15, 23, 42, 0.08)' : 'none'
               }}
             >
-              {option}
+              {t(severityOptionTKey(option))}
             </button>
           ))}
         </div>
@@ -475,22 +480,22 @@ const AlertsPanel = ({ filter, setFilter, filteredAlerts, overviewStats }) => {
       {displayedAlerts.length === 0 && (
         <div className="card" style={{ marginTop: '22px', textAlign: 'center', padding: '48px 28px' }}>
           <ShieldCheck size={42} color="var(--safe)" style={{ marginBottom: '14px' }} />
-          <h3 style={{ fontSize: '28px', marginBottom: '8px' }}>No matching alerts found</h3>
-          <p style={{ color: 'var(--text-muted)' }}>Try adjusting your search query or filters.</p>
+          <h3 style={{ fontSize: '28px', marginBottom: '8px' }}>{t('alerts.noMatchTitle')}</h3>
+          <p style={{ color: 'var(--text-muted)' }}>{t('alerts.noMatchBody')}</p>
         </div>
       )}
 
       <section style={overviewPanelStyle}>
         <div style={overviewStatStyle}>
-          <div style={overviewLabelStyle}>Active Alerts</div>
+          <div style={overviewLabelStyle}>{t('alerts.statActive')}</div>
           <div style={{ fontSize: '42px', fontWeight: 800, lineHeight: 1 }}>{overviewStats.active}</div>
         </div>
         <div style={overviewStatStyle}>
-          <div style={overviewLabelStyle}>Critical Cases</div>
+          <div style={overviewLabelStyle}>{t('alerts.statCritical')}</div>
           <div style={{ fontSize: '42px', fontWeight: 800, lineHeight: 1, color: '#b91c1c' }}>{overviewStats.critical}</div>
         </div>
         <div style={{ ...overviewStatStyle, borderRight: 'none' }}>
-          <div style={overviewLabelStyle}>Systems Ok</div>
+          <div style={overviewLabelStyle}>{t('alerts.statSystemsOk')}</div>
           <div style={{ fontSize: '42px', fontWeight: 800, lineHeight: 1, color: '#15803d' }}>{overviewStats.health}</div>
         </div>
       </section>
@@ -498,23 +503,33 @@ const AlertsPanel = ({ filter, setFilter, filteredAlerts, overviewStats }) => {
   );
 };
 
-const OverviewPanel = ({ overviewStats, trendData, categoryChartData, tableRows }) => (
+const OverviewPanel = ({ overviewStats, trendData, categoryChartData, tableRows }) => {
+  const { t } = useTranslation();
+  const tableHeadings = [
+    t('alerts.tableHeadId'),
+    t('alerts.tableHeadIssue'),
+    t('alerts.tableHeadWard'),
+    t('alerts.tableHeadRisk'),
+    t('alerts.tableHeadStatus'),
+    t('alerts.tableHeadReported')
+  ];
+  return (
   <>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px' }}>
-      <h1 style={{ fontSize: '48px', lineHeight: 1, letterSpacing: '-1px', color: '#091E42' }}>Infrastructure Overview</h1>
-      <div style={{ fontSize: '14px', color: '#7f8db4' }}>Live data from system reports · Mumbai</div>
+      <h1 style={{ fontSize: '48px', lineHeight: 1, letterSpacing: '-1px', color: '#091E42' }}>{t('alerts.infraOverview')}</h1>
+      <div style={{ fontSize: '14px', color: '#7f8db4' }}>{t('alerts.liveData')}</div>
     </div>
 
     <section style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '16px', marginBottom: '22px' }}>
-      <OverviewMetricCard icon="CR" value={overviewStats.critical} label="Critical Issues" />
-      <OverviewMetricCard icon="TR" value={overviewStats.totalReports.toLocaleString()} label="Total Reports" />
-      <OverviewMetricCard icon="CL" value={overviewStats.closed.toLocaleString()} label="Closed Issues" />
-      <OverviewMetricCard icon="AG" value={overviewStats.averageIssueAge} label="Average Issue Age" />
+      <OverviewMetricCard icon="CR" value={overviewStats.critical} label={t('alerts.metricCritical')} />
+      <OverviewMetricCard icon="TR" value={overviewStats.totalReports.toLocaleString()} label={t('alerts.metricTotal')} />
+      <OverviewMetricCard icon="CL" value={overviewStats.closed.toLocaleString()} label={t('alerts.metricClosed')} />
+      <OverviewMetricCard icon="AG" value={overviewStats.averageIssueAge} label={t('alerts.metricAge')} />
     </section>
 
     <section style={{ display: 'grid', gridTemplateColumns: '1.45fr 0.95fr', gap: '18px', marginBottom: '20px' }}>
       <div style={overviewCardStyle}>
-        <div style={overviewCardTitleStyle}>Complaint Trend (Last 7 Months)</div>
+        <div style={overviewCardTitleStyle}>{t('alerts.trendTitle')}</div>
         <div style={{ height: '250px', marginTop: '22px' }}>
           <Line
             data={trendData}
@@ -544,7 +559,7 @@ const OverviewPanel = ({ overviewStats, trendData, categoryChartData, tableRows 
       </div>
 
       <div style={overviewCardStyle}>
-        <div style={overviewCardTitleStyle}>Issue Categories</div>
+        <div style={overviewCardTitleStyle}>{t('alerts.categoriesTitle')}</div>
         <div style={{ height: '250px', marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Doughnut
             data={categoryChartData}
@@ -569,16 +584,16 @@ const OverviewPanel = ({ overviewStats, trendData, categoryChartData, tableRows 
 
     <section style={overviewCardStyle}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
-        <div style={overviewCardTitleStyle}>Recent High-Priority Complaints</div>
-        <button className="btn-primary" style={{ padding: '10px 18px', fontSize: '14px' }}>View All</button>
+        <div style={overviewCardTitleStyle}>{t('alerts.recentTitle')}</div>
+        <button className="btn-primary" style={{ padding: '10px 18px', fontSize: '14px' }}>{t('alerts.viewAll')}</button>
       </div>
 
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', color: '#172B4D' }}>
           <thead>
             <tr>
-              {['ID', 'Issue', 'Ward', 'Risk Score', 'Status', 'Reported'].map((heading) => (
-                <th key={heading} style={tableHeadingStyle}>{heading}</th>
+              {tableHeadings.map((heading, hi) => (
+                <th key={hi} style={tableHeadingStyle}>{heading}</th>
               ))}
             </tr>
           </thead>
@@ -607,10 +622,13 @@ const OverviewPanel = ({ overviewStats, trendData, categoryChartData, tableRows 
       </div>
     </section>
   </>
-);
+  );
+};
 
 const AlertCard = ({ alert, index, searchQuery = '' }) => {
+  const { t } = useTranslation();
   const severity = getSeverityLabel(alert.score);
+  const severityDisplay = t(severityOptionTKey(severity));
   const Icon = getSeverityIcon(severity);
 
   return (
@@ -633,7 +651,7 @@ const AlertCard = ({ alert, index, searchQuery = '' }) => {
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '18px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          <span style={{ ...pillStyle, background: `${alert.color}15`, color: alert.color }}>{severity}</span>
+          <span style={{ ...pillStyle, background: `${alert.color}15`, color: alert.color }}>{severityDisplay}</span>
           <span style={{ color: 'var(--text-muted)', fontSize: '14px' }}>{new Date(alert.createdAt).toLocaleString()}</span>
         </div>
 
@@ -652,7 +670,7 @@ const AlertCard = ({ alert, index, searchQuery = '' }) => {
         </div>
         {alert.isDelayed && (
           <div style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', border: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-muted)' }}>EST. AI COST</div>
+            <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-muted)' }}>{t('alerts.estAiCost')}</div>
             <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--primary)' }}>Rs {alert.aiData.estimatedCost.toLocaleString()}</div>
           </div>
         )}
@@ -674,11 +692,11 @@ const AlertCard = ({ alert, index, searchQuery = '' }) => {
 
       <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '14px', paddingTop: '18px', borderTop: '1px solid #e5e7eb' }}>
         <div>
-          <div style={overviewLabelStyle}>Status</div>
+          <div style={overviewLabelStyle}>{t('alerts.cardStatus')}</div>
           <div style={{ fontWeight: 700, color: alert.color, marginTop: '4px' }}>{alert.status}</div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={overviewLabelStyle}>Risk Score</div>
+          <div style={overviewLabelStyle}>{t('alerts.cardRisk')}</div>
           <div style={{ fontWeight: 800, fontSize: '28px', marginTop: '4px' }}>{alert.score}</div>
         </div>
       </div>

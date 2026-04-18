@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Mail, Lock, User, Shield, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const Auth = ({ mode = 'login' }) => {
+  const { t } = useTranslation();
   const [isLogin, setIsLogin] = useState(mode === 'login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,7 +30,7 @@ const Auth = ({ mode = 'login' }) => {
       }
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err.message || 'Authentication failed');
+      setError(err.message || t('auth.authFailed'));
     } finally {
       setLoading(false);
     }
@@ -54,9 +56,9 @@ const Auth = ({ mode = 'login' }) => {
           }}>
             <Shield size={40} color="var(--primary)" />
           </div>
-          <h2 style={{ fontSize: '2rem' }}>{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
+          <h2 style={{ fontSize: '2rem' }}>{isLogin ? t('auth.welcomeBack') : t('auth.createAccount')}</h2>
           <p style={{ color: 'var(--text-muted)' }}>
-            {isLogin ? 'Log in to manage infrastructure' : 'Join InfraMind AI today'}
+            {isLogin ? t('auth.loginSubtitle') : t('auth.signupSubtitle')}
           </p>
         </div>
 
@@ -79,7 +81,7 @@ const Auth = ({ mode = 'login' }) => {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
           <div className="input-group">
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 500 }}>Email Address</label>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 500 }}>{t('auth.email')}</label>
             <div style={{ position: 'relative' }}>
               <Mail size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
               <input 
@@ -88,13 +90,13 @@ const Auth = ({ mode = 'login' }) => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 style={inputStyle} 
-                placeholder="name@example.com"
+                placeholder={t('auth.emailPlaceholder')}
               />
             </div>
           </div>
 
           <div className="input-group">
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 500 }}>Password</label>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 500 }}>{t('auth.password')}</label>
             <div style={{ position: 'relative' }}>
               <Lock size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
               <input 
@@ -103,7 +105,7 @@ const Auth = ({ mode = 'login' }) => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 style={inputStyle} 
-                placeholder="••••••••"
+                placeholder={t('auth.passwordPlaceholder')}
               />
             </div>
           </div>
@@ -114,17 +116,17 @@ const Auth = ({ mode = 'login' }) => {
             className="btn-primary" 
             style={{ width: '100%', justifyContent: 'center', padding: '1rem', marginTop: '1rem' }}
           >
-            {loading ? 'Processing...' : isLogin ? 'Sign In' : 'Create Account'}
+            {loading ? t('auth.processing') : isLogin ? t('auth.signIn') : t('auth.createAccountBtn')}
           </button>
         </form>
 
         <p style={{ textAlign: 'center', marginTop: '2rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-          {isLogin ? "Don't have an account? " : "Already have an account? "}
+          {isLogin ? t('auth.noAccount') : t('auth.hasAccount')}
           <span 
             onClick={() => setIsLogin(!isLogin)} 
             style={{ color: 'var(--primary)', cursor: 'pointer', fontWeight: 600 }}
           >
-            {isLogin ? 'Sign Up' : 'Log In'}
+            {isLogin ? t('auth.signUpLink') : t('auth.logInLink')}
           </span>
         </p>
       </div>

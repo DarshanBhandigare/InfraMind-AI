@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Shield, ArrowRight, Play, Globe, CheckCircle, Activity, Zap, FileText, Bolt } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { subscribeToStats } from '../services/statsService';
@@ -9,7 +11,9 @@ import { processReport } from '../services/dataSyncService';
 import ScrollReveal from '../components/ScrollReveal';
 
 const Home = () => {
+  const { t } = useTranslation();
   const [stats, setStats] = useState({ total: 0, high: 0, resolved: '0%' });
+
   const [recentReports, setRecentReports] = useState([]);
 
   useEffect(() => {
@@ -52,29 +56,32 @@ const Home = () => {
             >
               <div style={premiumBadgeStyle}>
                 <Zap size={14} fill="#60a5fa" color="#60a5fa" />
-                <span>POWERED BY DISTRIBUTED INTELLIGENCE</span>
+                <span>{t('hero.badge')}</span>
               </div>
+
               <h1 style={heroTitleStyle}>
-                Predict <br /> Failure. <br />
+                {t('hero.title.predict')} <br /> {t('hero.title.failure')} <br />
                 <span style={{ color: 'var(--primary)', textShadow: '0 0 30px rgba(37, 99, 235, 0.2)' }}>
-                  Before It Happens.
+                  {t('hero.title.before')}
                 </span>
               </h1>
+
               <p style={heroSubtitleStyle}>
-                The world's first predictive maintenance grid for metropolitan assets.
-                Identify vulnerabilities, automate escalations, and protect the community in real-time.
+                {t('hero.subtitle')}
               </p>
+
               <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                 <motion.div whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}>
                   <Link to="/report" style={ctaPrimaryStyle}>
-                    Submit Report
+                    {t('hero.submitReport')}
                   </Link>
                 </motion.div>
                 <motion.div whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}>
                   <Link to="/dashboard" style={ctaSecondaryStyle}>
-                    Live Command <ArrowRight size={18} />
+                    {t('hero.liveCommand')} <ArrowRight size={18} />
                   </Link>
                 </motion.div>
+
               </div>
             </motion.div>
 
@@ -100,9 +107,10 @@ const Home = () => {
 
                   <Bolt size={24} color="var(--primary)" />
                   <div>
-                    <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>System Status</div>
-                    <div style={{ fontSize: '20px', fontWeight: 800 }}> Bridge Construction</div>
+                    <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{t('hero.systemStatus')}</div>
+                    <div style={{ fontSize: '20px', fontWeight: 800 }}> {t('hero.bridgeConstruction')}</div>
                   </div>
+
                 </motion.div>
               </div>
             </motion.div>
@@ -115,10 +123,11 @@ const Home = () => {
         <div className="container">
           <ScrollReveal direction="up" delay={0.1}>
             <div style={statsGridStyle}>
-              <StatCard label="Live Reports" value={stats.total} icon={<Shield color="var(--primary)" />} color="#deebff" />
-              <StatCard label="High Risk Clusters" value={stats.high} icon={<AlertTriangle color="var(--critical)" />} color="#ffebe6" />
-              <StatCard label="Resolved Efficiency" value={stats.resolved} icon={<CheckCircle color="var(--safe)" />} color="#e3fcef" />
+              <StatCard label={t('home.stats.live')} value={stats.total} icon={<Shield color="var(--primary)" />} color="#deebff" />
+              <StatCard label={t('home.stats.high')} value={stats.high} icon={<AlertTriangle color="var(--critical)" />} color="#ffebe6" />
+              <StatCard label={t('home.stats.resolved')} value={stats.resolved} icon={<CheckCircle color="var(--safe)" />} color="#e3fcef" />
             </div>
+
           </ScrollReveal>
 
           <div className="grid-2" style={{ marginTop: '80px', gap: '40px' }}>
@@ -128,11 +137,12 @@ const Home = () => {
                 <img src="https://i.pinimg.com/736x/17/85/f9/1785f9a5ffdb6e8070dc70579d1b044c.jpg" alt="Map" style={mapImageStyle} />
                 <div style={mapOverlayStyle}>
                   <div>
-                    <h3 style={{ color: 'white', fontSize: '28px', marginBottom: '8px' }}>Metropolitan Grid</h3>
-                    <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '15px' }}>Visualizing every sensor node and citizen report in real-time.</p>
+                    <h3 style={{ color: 'white', fontSize: '28px', marginBottom: '8px' }}>{t('home.map.title')}</h3>
+                    <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '15px' }}>{t('home.map.subtitle')}</p>
                   </div>
-                  <Link to="/map" className="btn-primary" style={{ background: 'white', color: 'var(--text)', border: 'none' }}>Launch Live View</Link>
+                  <Link to="/map" className="btn-primary" style={{ background: 'white', color: 'var(--text)', border: 'none' }}>{t('home.map.btn')}</Link>
                 </div>
+
               </div>
             </ScrollReveal>
 
@@ -140,21 +150,23 @@ const Home = () => {
             <ScrollReveal direction="right" delay={0.3}>
               <div className="card" style={{ padding: '40px', display: 'flex', flexDirection: 'column', height: '100%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-                  <h3 style={{ fontSize: '20px' }}>Recent City Reports</h3>
-                  <div className="pill pill-blue">LIVE FEED</div>
+                  <h3 style={{ fontSize: '20px' }}>{t('home.feed.title')}</h3>
+                  <div className="pill pill-blue">{t('home.feed.live')}</div>
                 </div>
+
                 <div style={{ display: 'grid', gap: '16px' }}>
                   {recentReports.length > 0 ? recentReports.map((report) => (
                     <ReportRow key={report.id} report={report} />
                   )) : (
                     <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                      Waiting for metropolitan data synchronization...
+                      {t('home.feed.empty')}
                     </div>
                   )}
                 </div>
                 <Link to="/dashboard" style={{ marginTop: 'auto', paddingTop: '24px', textAlign: 'center', color: 'var(--primary)', fontWeight: 700, fontSize: '14px', textDecoration: 'none' }}>
-                  View Full Queue &rarr;
+                  {t('home.feed.all')} &rarr;
                 </Link>
+
               </div>
             </ScrollReveal>
           </div>
@@ -168,19 +180,20 @@ const Home = () => {
             <div>
               <h3 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--primary)', marginBottom: '20px' }}>InfraMind AI</h3>
               <p style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: 1.6 }}>
-                The definitive standard for metropolitan infrastructure management.
-                Built for cities that never sleep.
+                {t('home.footer.tagline')}
               </p>
             </div>
+
             {/* Footer links mapping... */}
           </div>
           <div style={footerBottomStyle}>
             <span>© 2024 InfraMind AI.</span>
             <div style={{ display: 'flex', gap: '30px' }}>
-              <span>STATUS: NOMINAL</span>
-              <span>LICENSE: ENTERPRISE</span>
+              <span>{t('home.footer.status')}</span>
+              <span>{t('home.footer.license')}</span>
             </div>
           </div>
+
         </div>
       </footer>
     </div>

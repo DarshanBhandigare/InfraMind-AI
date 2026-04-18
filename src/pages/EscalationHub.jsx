@@ -22,8 +22,10 @@ import { db } from '../services/firebase';
 import { processReport } from '../services/dataSyncService';
 
 import { doc, updateDoc } from 'firebase/firestore';
+import { useTranslation } from 'react-i18next';
 
 const EscalationHub = () => {
+  const { t } = useTranslation();
   const [escalations, setEscalations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -98,10 +100,10 @@ const EscalationHub = () => {
         progress: 15, // Starting progress
         acceptedAt: serverTimestamp()
       });
-      alert(`${orgName} has successfully taken responsibility for this task!`);
+      alert(t('hub.acceptOk', { org: orgName }));
     } catch (err) {
       console.error("Error accepting task:", err);
-      alert("Failed to accept task. Please try again.");
+      alert(t('hub.acceptFail'));
     }
   };
 
@@ -116,18 +118,17 @@ const EscalationHub = () => {
         >
           <div style={tagStyle}>
             <Clock size={14} style={{ marginRight: '6px' }} />
-            Automatic Escalation Protocol
+            {t('hub.tag')}
           </div>
-          <h1 style={titleStyle}>Escalation <span style={{ color: 'var(--primary)' }}>Hub</span></h1>
+          <h1 style={titleStyle}>{t('hub.title')} <span style={{ color: 'var(--primary)' }}>{t('hub.titleAccent')}</span></h1>
           <p style={subtitleStyle}>
-            Complaints unresolved for over 10 days are automatically listed here. 
-            NGOs and private contractors can take ownership to ensure no issue is left behind.
+            {t('hub.subtitle')}
           </p>
           <div style={{ display: 'flex', gap: '12px', marginTop: '24px', alignItems: 'center' }}>
             <button 
               onClick={() => {
                 if (selectedReportIds.size === 0) {
-                  alert("Please select at least one delayed complaint to generate a report.");
+                  alert(t('hub.selectOne'));
                   return;
                 }
                 setShowReportModal(true);
@@ -135,27 +136,27 @@ const EscalationHub = () => {
               className="btn-primary"
               style={{ ...secondaryButtonStyle, background: selectedReportIds.size > 0 ? 'var(--primary)' : 'white', color: selectedReportIds.size > 0 ? 'white' : 'var(--text-muted)' }}
             >
-              <FileText size={18} /> {selectedReportIds.size > 0 ? `Generate Report for ${selectedReportIds.size} Selected` : 'Generate Delayed Complaints Report'}
+              <FileText size={18} /> {selectedReportIds.size > 0 ? t('hub.generateSelected', { count: selectedReportIds.size }) : t('hub.generateDelayed')}
             </button>
             {selectedReportIds.size > 0 && (
               <button onClick={clearSelection} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
-                Clear Selection
+                {t('hub.clearSelection')}
               </button>
             )}
           </div>
         </motion.div>
 
         <div style={statsContainerStyle}>
-          <StatCard label="Delayed Issues" value={filteredEscalations.length} color="#ef4444" />
-          <StatCard label="Tasks Accepted" value={escalations.filter(e => e.acceptedBy).length} color="#10b981" />
-          <StatCard label="Estimated City Cost" value={`₹${(totalEscalationCost / 100000).toFixed(1)}L`} color="#3b82f6" />
+          <StatCard label={t('hub.statDelayed')} value={filteredEscalations.length} color="#ef4444" />
+          <StatCard label={t('hub.statAccepted')} value={escalations.filter(e => e.acceptedBy).length} color="#10b981" />
+          <StatCard label={t('hub.statCost')} value={`₹${(totalEscalationCost / 100000).toFixed(1)}L`} color="#3b82f6" />
         </div>
       </section>
 
       <div style={contentGridStyle}>
         <div style={{ ...feedContainerStyle, gridColumn: 'span 2' }}>
           <div style={filterRowStyle}>
-            <h2 style={sectionTitleStyle}>Delayed Complaints Feed</h2>
+            <h2 style={sectionTitleStyle}>{t('hub.feedTitle')}</h2>
             <div style={{ display: 'flex', gap: '8px' }}>
               {['All', 'Critical', 'Pothole', 'Drainage'].map(cat => (
                 <button 
@@ -167,19 +168,19 @@ const EscalationHub = () => {
                     color: selectedCategory === cat ? 'white' : 'var(--text-muted)'
                   }}
                 >
-                  {cat}
+                  {t(`hub.categories.${cat}`)}
                 </button>
               ))}
             </div>
           </div>
 
           {loading ? (
-             <div style={{ padding: '40px', textAlign: 'center' }}>Loading escalation data...</div>
+             <div style={{ padding: '40px', textAlign: 'center' }}>{t('hub.loading')}</div>
           ) : filteredEscalations.length === 0 ? (
             <div style={emptyStateStyle}>
               <CheckCircle2 size={48} color="#10b981" />
-              <h3>All clear!</h3>
-              <p>No complaints have been delayed past the 10-day threshold.</p>
+              <h3>{t('hub.allClearTitle')}</h3>
+              <p>{t('hub.allClearBody')}</p>
             </div>
           ) : (
             <div style={{ display: 'grid', gap: '20px' }}>
@@ -209,27 +210,27 @@ const EscalationHub = () => {
                style={modalContentStyle}
              >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                  <h2 style={{ margin: 0, fontSize: '24px' }}>Executive Hub Report</h2>
+                  <h2 style={{ margin: 0, fontSize: '24px' }}>{t('hub.modalTitle')}</h2>
                   <button onClick={() => setShowReportModal(false)} style={iconButtonStyle}><X size={20}/></button>
                 </div>
 
                 <div style={reportSummaryGridStyle}>
                   <div style={reportStatStyle}>
-                    <div style={infoLabelStyle}>Selected</div>
+                    <div style={infoLabelStyle}>{t('hub.selected')}</div>
                     <div style={{ fontSize: '20px', fontWeight: 800 }}>{selectedReportIds.size}</div>
                   </div>
                   <div style={reportStatStyle}>
-                    <div style={infoLabelStyle}>Total Budget</div>
+                    <div style={infoLabelStyle}>{t('hub.totalBudget')}</div>
                     <div style={{ fontSize: '20px', fontWeight: 800 }}>₹{(selectedTotalCost / 100000).toFixed(1)}L</div>
                   </div>
                   <div style={reportStatStyle}>
-                    <div style={infoLabelStyle}>Priority High</div>
+                    <div style={infoLabelStyle}>{t('hub.priorityHigh')}</div>
                     <div style={{ fontSize: '20px', fontWeight: 800 }}>{selectedEscalations.filter(e => e.category === 'Critical').length}</div>
                   </div>
                 </div>
 
                 <div style={{ marginTop: '24px', maxHeight: '200px', overflowY: 'auto', border: '1px solid #f1f5f9', borderRadius: '12px', padding: '12px' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '10px' }}>INCLUDED COMPLAINTS:</div>
+                  <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '10px' }}>{t('hub.included')}</div>
                   {selectedEscalations.map(esc => (
                     <div key={esc.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f8fafc', fontSize: '13px' }}>
                       <div style={{ fontWeight: 600 }}>{esc.type}</div>
@@ -240,13 +241,13 @@ const EscalationHub = () => {
 
                 <button 
                   onClick={() => {
-                    alert(`Generating report for ${selectedReportIds.size} complaints...`);
+                    alert(t('hub.generating', { count: selectedReportIds.size }));
                     setShowReportModal(false);
                   }}
                   className="btn-primary" 
                   style={{ width: '100%', marginTop: '30px', padding: '16px', display: 'flex', justifyContent: 'center', gap: '8px', borderRadius: '14px' }}
                 >
-                  <FileText size={18} /> Download Selection as PDF
+                  <FileText size={18} /> {t('hub.downloadPdf')}
                 </button>
              </motion.div>
           </div>
@@ -257,6 +258,7 @@ const EscalationHub = () => {
 };
 
 const EscalationCard = ({ item, isSelected, onToggle, onAccept }) => {
+  const { t } = useTranslation();
   const [showDetails, setShowDetails] = useState(false);
 
   return (
@@ -290,17 +292,17 @@ const EscalationCard = ({ item, isSelected, onToggle, onAccept }) => {
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
             <span style={{ ...badgeStyle, background: item.category === 'Critical' ? '#fee2e2' : '#fef3c7', color: item.category === 'Critical' ? '#991b1b' : '#92400e' }}>
-              {item.category || 'Maintenance'}
+              {item.category || t('hub.maintenance')}
             </span>
             <span style={{ fontSize: '12px', color: '#ef4444', fontWeight: 700 }}>
-              DELAYED BY {item.daysDelayed} DAYS
+              {t('hub.delayedBy', { days: item.daysDelayed })}
             </span>
           </div>
           <h3 style={{ margin: 0, fontSize: '20px' }}>{item.type}</h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '14px', margin: '4px 0 0' }}>{item.address}</p>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>AI Escalation ID</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{t('hub.aiId')}</div>
           <div style={{ fontWeight: 700 }}>#ESC-{item.id.slice(-4)}</div>
         </div>
       </div>
@@ -309,21 +311,21 @@ const EscalationCard = ({ item, isSelected, onToggle, onAccept }) => {
         <div style={infoItemStyle}>
           <DollarSign size={16} />
           <div>
-            <div style={infoLabelStyle}>Estimated Cost</div>
+            <div style={infoLabelStyle}>{t('hub.estimatedCost')}</div>
             <div style={infoValueStyle}>₹{item.aiData.estimatedCost.toLocaleString()}</div>
           </div>
         </div>
         <div style={infoItemStyle}>
           <Wrench size={16} />
           <div>
-            <div style={infoLabelStyle}>Required Work</div>
+            <div style={infoLabelStyle}>{t('hub.requiredWork')}</div>
             <div style={infoValueStyle}>{item.aiData.timeToRepair}</div>
           </div>
         </div>
         <div style={infoItemStyle}>
           <Shield size={16} />
           <div>
-            <div style={infoLabelStyle}>Priority</div>
+            <div style={infoLabelStyle}>{t('hub.priorityField')}</div>
             <div style={infoValueStyle}>{item.aiData.riskLevel}</div>
           </div>
         </div>
@@ -332,9 +334,9 @@ const EscalationCard = ({ item, isSelected, onToggle, onAccept }) => {
       {item.acceptedBy ? (
         <div style={acceptedByStyle}>
           <CheckCircle2 size={18} color="#10b981" />
-          <span>Accepted by <strong>{item.acceptedBy}</strong></span>
+          <span>{t('hub.acceptedByPrefix')} <strong>{item.acceptedBy}</strong></span>
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '10px' }}>
-             <div style={{ fontSize: '12px' }}>{item.progress}% Progress</div>
+             <div style={{ fontSize: '12px' }}>{t('hub.progressPct', { pct: item.progress ?? 0 })}</div>
              <div style={progressBarContainerStyle}>
                 <div style={{ ...progressBarFillStyle, width: `${item.progress}%` }} />
              </div>
@@ -346,13 +348,13 @@ const EscalationCard = ({ item, isSelected, onToggle, onAccept }) => {
             onClick={() => onAccept('NGO Representative')}
             style={acceptButtonStyle}
           >
-            <Hammer size={16} /> Take Responsibility
+            <Hammer size={16} /> {t('hub.takeResponsibility')}
           </button>
           <button 
             style={detailsToggleStyle}
             onClick={() => setShowDetails(!showDetails)}
           >
-            {showDetails ? 'Hide AI Analysis' : 'Show AI Analysis'}
+            {showDetails ? t('hub.hideAnalysis') : t('hub.showAnalysis')}
           </button>
           <button style={iconButtonStyle}><Share2 size={18} /></button>
         </div>
@@ -364,7 +366,7 @@ const EscalationCard = ({ item, isSelected, onToggle, onAccept }) => {
           animate={{ height: 'auto', opacity: 1 }}
           style={aiDetailsPanelStyle}
         >
-          <div style={{ fontWeight: 700, marginBottom: '8px', fontSize: '14px' }}>AI-Generated Work Plan:</div>
+          <div style={{ fontWeight: 700, marginBottom: '8px', fontSize: '14px' }}>{t('hub.aiWorkPlan')}</div>
           <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '14px', lineHeight: 1.6 }}>
             {item.aiData?.requiredWork?.map((step, i) => (
               <li key={i}>{step}</li>

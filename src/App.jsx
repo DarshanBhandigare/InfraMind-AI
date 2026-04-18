@@ -2,6 +2,8 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
+import LanguageSwitcher from './components/LanguageSwitcher';
+
 
 // Pages
 import Home from './pages/Home';
@@ -112,6 +114,7 @@ function App() {
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </AppLayout>
+          <LanguageSwitcher />
         </div>
       </Router>
     </AuthProvider>

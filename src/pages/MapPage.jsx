@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { db } from '../services/firebase';
 import { processReport } from '../services/dataSyncService';
+import { useTranslation } from 'react-i18next';
 
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
@@ -83,6 +84,7 @@ const MapFocus = ({ issue }) => {
 };
 
 const MapPage = () => {
+  const { t } = useTranslation();
   const [reports, setReports] = useState([]);
   const [selectedIssueId, setSelectedIssueId] = useState(null);
   const autoSelectedRef = useRef(false);
@@ -220,10 +222,10 @@ const MapPage = () => {
         <div style={sidebarHeroCardStyle}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
             <div>
-              <div style={eyebrowStyle}>Live Operations Map</div>
-              <h2 style={sidebarTitleStyle}>Mumbai civic signals, cleaned up and ready to scan.</h2>
+              <div style={eyebrowStyle}>{t('map.eyebrow')}</div>
+              <h2 style={sidebarTitleStyle}>{t('map.title')}</h2>
               <p style={sidebarSubtitleStyle}>
-                Filter approved reports, inspect hotspots, and jump straight into the most urgent citizen evidence.
+                {t('map.subtitle')}
               </p>
             </div>
             <div style={sidebarBadgeStyle}>
@@ -232,25 +234,25 @@ const MapPage = () => {
           </div>
 
           <div style={sidebarStatGridStyle}>
-            <MiniStat label="Visible reports" value={displayReports.length} />
-            <MiniStat label="Critical" value={severitySummary.critical} tone="critical" />
-            <MiniStat label="Selected zone" value={selectedIssue ? '1' : '0'} />
+            <MiniStat label={t('map.visibleReports')} value={displayReports.length} />
+            <MiniStat label={t('map.critical')} value={severitySummary.critical} tone="critical" />
+            <MiniStat label={t('map.selectedZone')} value={selectedIssue ? '1' : '0'} />
           </div>
         </div>
 
         <div style={sidebarSectionStyle}>
           <div style={sectionHeaderRowStyle}>
-            <h4 style={sidebarHeadingStyle}>Issue Type</h4>
+            <h4 style={sidebarHeadingStyle}>{t('map.issueType')}</h4>
             <div style={sectionPillStyle}>
               <SlidersHorizontal size={12} />
-              Filters
+              {t('map.filters')}
             </div>
           </div>
           <div style={{ display: 'grid', gap: '10px', marginTop: '12px' }}>
             {Object.keys(issueFilters).map((key) => (
               <FilterCheckbox
                 key={key}
-                label={key}
+                label={t(`map.issueTypes.${key.replace(/\s/g, '_')}`)}
                 checked={issueFilters[key]}
                 onChange={() => toggleIssueFilter(key, setIssueFilters)}
               />
@@ -259,45 +261,48 @@ const MapPage = () => {
         </div>
 
         <div style={sidebarSectionStyle}>
-          <h4 style={sidebarHeadingStyle}>Severity</h4>
+          <h4 style={sidebarHeadingStyle}>{t('map.severity')}</h4>
           <div style={{ display: 'grid', gap: '10px', marginTop: '12px' }}>
             <SeverityPill
-              label="High / Critical"
+              label={t('map.highCritical')}
               color="#fff1f2"
               textColor="#b91c1c"
               accent="#ef4444"
               icon="!"
               count={severitySummary.critical}
+              subLine={t('map.visibleReportsDetail', { count: severitySummary.critical })}
             />
             <SeverityPill
-              label="Medium Risk"
+              label={t('map.mediumRisk')}
               color="#fffbeb"
               textColor="#a16207"
               accent="#f59e0b"
               icon="^"
               count={severitySummary.medium}
+              subLine={t('map.visibleReportsDetail', { count: severitySummary.medium })}
             />
             <SeverityPill
-              label="Low Priority"
+              label={t('map.lowPriority')}
               color="#ecfdf5"
               textColor="#15803d"
               accent="#22c55e"
               icon="+"
               count={severitySummary.low}
+              subLine={t('map.visibleReportsDetail', { count: severitySummary.low })}
             />
           </div>
         </div>
 
         <div className="card" style={reportLayerCardStyle}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center' }}>
-            <div style={{ ...sidebarHeadingStyle, color: 'var(--primary)', fontSize: '11px' }}>BMC Mumbai Demo Layer</div>
+            <div style={{ ...sidebarHeadingStyle, color: 'var(--primary)', fontSize: '11px' }}>{t('map.demoLayer')}</div>
             <div style={mapLiveBadgeStyle}>
               <span style={liveDotStyle} />
-              Live
+              {t('map.live')}
             </div>
           </div>
           <div style={{ fontSize: '14px', lineHeight: 1.6, color: 'var(--text-muted)' }}>
-            Map shows approved reports using citizen evidence.
+            {t('map.layerHelp')}
           </div>
           <div style={{ display: 'grid', gap: '10px' }}>
             {displayReports.slice(0, 3).map((report) => (
@@ -315,7 +320,7 @@ const MapPage = () => {
               </button>
             ))}
             {!displayReports.length && (
-              <div style={emptySidebarStateStyle}>No approved reports match the current filter set.</div>
+              <div style={emptySidebarStateStyle}>{t('map.emptyFilter')}</div>
             )}
           </div>
         </div>
@@ -325,15 +330,15 @@ const MapPage = () => {
         <div style={detailPanelStyle(isTablet, isMobile)}>
           <div style={{ padding: '24px 24px 0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-              <span style={referenceChipStyle}>REF: {selectedIssue.id.substring(0, 8).toUpperCase()}</span>
-              <button onClick={() => setSelectedIssueId(null)} style={closeButtonStyle} aria-label="Close">
+              <span style={referenceChipStyle}>{t('map.ref')} {selectedIssue.id.substring(0, 8).toUpperCase()}</span>
+              <button onClick={() => setSelectedIssueId(null)} style={closeButtonStyle} aria-label={t('map.close')}>
                 <X size={20} />
               </button>
             </div>
             <h2 style={{ fontSize: '24px', marginBottom: '10px', lineHeight: 1.15 }}>{selectedIssue.type}</h2>
             <div style={detailMetaRowStyle}>
-              <DetailMetaChip icon={<MapPin size={14} />} label={selectedIssue.displayAddress || 'Pinned location'} />
-              <DetailMetaChip icon={<ShieldAlert size={14} />} label={`Risk ${selectedIssue.impactLabel}`} />
+              <DetailMetaChip icon={<MapPin size={14} />} label={selectedIssue.displayAddress || t('map.pinned')} />
+              <DetailMetaChip icon={<ShieldAlert size={14} />} label={t('map.riskPrefix', { label: selectedIssue.impactLabel })} />
             </div>
           </div>
 
@@ -347,24 +352,24 @@ const MapPage = () => {
             ) : (
               <div style={emptyImageStyle}>
                 <AlertTriangle size={28} color="#94a3b8" />
-                <div style={{ fontSize: '15px', fontWeight: 700, color: '#475569' }}>No uploaded image available</div>
+                <div style={{ fontSize: '15px', fontWeight: 700, color: '#475569' }}>{t('map.noImage')}</div>
                 <div style={{ fontSize: '13px', color: '#64748b', textAlign: 'center', maxWidth: '240px' }}>
-                  This approved report did not include a usable evidence image.
+                  {t('map.noImageHelp')}
                 </div>
               </div>
             )}
           </div>
 
           <div style={{ padding: '24px' }}>
-            <div style={{ ...detailLabelStyle, marginBottom: '10px' }}>Description</div>
+            <div style={{ ...detailLabelStyle, marginBottom: '10px' }}>{t('map.description')}</div>
             <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '18px', lineHeight: 1.6 }}>
-              {selectedIssue.description || 'Identified risk requiring immediate assessment and resolution strategy.'}
+              {selectedIssue.description || t('map.defaultDescription')}
             </p>
 
             <div style={detailStatsGridStyle(isMobile)}>
-              <InfoPanel title="Status" value={selectedIssue.status || 'Action Required'} tone={selectedIssue.color} />
+              <InfoPanel title={t('map.status')} value={selectedIssue.status || t('map.actionRequired')} tone={selectedIssue.color} />
               <InfoPanel
-                title="Coordinates"
+                title={t('map.coordinates')}
                 value={`${selectedIssue.location.lat.toFixed(4)}, ${selectedIssue.location.lng.toFixed(4)}`}
               />
             </div>
@@ -372,12 +377,12 @@ const MapPage = () => {
             {selectedIssue.isDelayed && selectedIssue.aiData && (
               <div style={aiPanelStyle}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', gap: '12px' }}>
-                  <div style={{ ...detailLabelStyle, color: '#0369a1', margin: 0 }}>AI ESTIMATED COST</div>
+                  <div style={{ ...detailLabelStyle, color: '#0369a1', margin: 0 }}>{t('map.aiCost')}</div>
                   <div style={{ fontSize: '18px', fontWeight: 800, color: '#0369a1' }}>
                     Rs {selectedIssue.aiData.estimatedCost.toLocaleString()}
                   </div>
                 </div>
-                <div style={detailLabelStyle}>AI WORK PLAN</div>
+                <div style={detailLabelStyle}>{t('map.aiPlan')}</div>
                 <ul style={{ margin: '8px 0 0', paddingLeft: '18px', fontSize: '13px', color: '#0c4a6e', lineHeight: 1.5 }}>
                   {selectedIssue.aiData.requiredWork.map((step, i) => (
                     <li key={i}>{step}</li>
@@ -409,7 +414,7 @@ const FilterCheckbox = ({ label, checked, onChange }) => (
   </label>
 );
 
-const SeverityPill = ({ label, color, textColor, accent, icon, count }) => (
+const SeverityPill = ({ label, color, textColor, accent, icon, subLine }) => (
   <div
     style={{
       padding: '14px 16px',
@@ -426,7 +431,7 @@ const SeverityPill = ({ label, color, textColor, accent, icon, count }) => (
   >
     <div>
       <div>{label}</div>
-      <div style={{ fontSize: '11px', fontWeight: 700, opacity: 0.72, marginTop: '2px' }}>{count} visible reports</div>
+      <div style={{ fontSize: '11px', fontWeight: 700, opacity: 0.72, marginTop: '2px' }}>{subLine}</div>
     </div>
     <span style={severityIconStyle(accent)}>{icon}</span>
   </div>

@@ -1,99 +1,60 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { AlertTriangle, ExternalLink, Phone, Shield } from 'lucide-react';
-
-const resourceGroups = [
-  {
-    title: 'Emergency Contacts',
-    icon: <Phone size={26} />,
-    accent: 'linear-gradient(135deg, #ff6b6b, #ef4444)',
-    items: [
-      {
-        label: 'BMC Helpline - 1916',
-        href: 'tel:1916',
-        meta: '24x7 municipal help line'
-      },
-      {
-        label: 'Police Control Room - 100',
-        href: 'tel:100',
-        meta: 'Mumbai Police emergency line'
-      },
-      {
-        label: 'Ambulance - 108',
-        href: 'tel:108',
-        meta: 'NHM Maharashtra MEMS'
-      },
-      {
-        label: 'Fire Brigade - 101',
-        href: 'tel:101',
-        meta: 'Mumbai fire emergency'
-      }
-    ]
-  },
-  {
-    title: 'Govt. & Civic Links',
-    icon: <Shield size={26} />,
-    accent: 'linear-gradient(135deg, #4b7bec, #2563eb)',
-    items: [
-      {
-        label: 'Official BMC Website',
-        href: 'https://www.mcgm.gov.in/',
-        meta: 'Brihanmumbai Municipal Corporation'
-      },
-      {
-        label: 'Register BMC Complaint',
-        href: 'https://www.mcgm.gov.in/irj/portal/anonymous/qlCLCComp',
-        meta: 'Civic complaint and grievance portal'
-      },
-      {
-        label: 'Aaple Sarkar',
-        href: 'https://aaplesarkar.mahaonline.gov.in/en',
-        meta: 'Maharashtra government citizen services'
-      },
-      {
-        label: 'Mumbai Police Online Complaint',
-        href: 'https://mumbaipolice.gov.in/OnlineComplaints?ps_id=0',
-        meta: 'Official minor complaint portal'
-      }
-    ]
-  },
-  {
-    title: 'Safety Awareness',
-    icon: <AlertTriangle size={26} />,
-    accent: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
-    items: [
-      {
-        label: 'Flood Safety Guide',
-        href: 'https://dm.mcgm.gov.in/flood-preparedness-guidelines',
-        meta: 'What to do during floods?'
-      },
-      {
-        label: 'Emergency Protocol',
-        href: 'https://ndma.gov.in/',
-        meta: 'Safety steps for disasters'
-      },
-      {
-        label: 'Civic Awareness',
-        href: 'https://www.mcgm.gov.in/',
-        meta: 'Stay updated with BMC alerts'
-      }
-    ]
-  }
-];
-
+import { useTranslation } from 'react-i18next';
 
 const About = () => {
+  const { t } = useTranslation();
+
+  const resourceGroups = useMemo(
+    () => [
+      {
+        title: t('about.emergency.title'),
+        icon: <Phone size={26} />,
+        accent: 'linear-gradient(135deg, #ff6b6b, #ef4444)',
+        items: [
+          { label: t('about.emergency.bmc1916.label'), href: 'tel:1916', meta: t('about.emergency.bmc1916.meta') },
+          { label: t('about.emergency.police100.label'), href: 'tel:100', meta: t('about.emergency.police100.meta') },
+          { label: t('about.emergency.ambulance108.label'), href: 'tel:108', meta: t('about.emergency.ambulance108.meta') },
+          { label: t('about.emergency.fire101.label'), href: 'tel:101', meta: t('about.emergency.fire101.meta') }
+        ]
+      },
+      {
+        title: t('about.gov.title'),
+        icon: <Shield size={26} />,
+        accent: 'linear-gradient(135deg, #4b7bec, #2563eb)',
+        items: [
+          { label: t('about.gov.bmcSite.label'), href: 'https://www.mcgm.gov.in/', meta: t('about.gov.bmcSite.meta') },
+          { label: t('about.gov.bmcComplaint.label'), href: 'https://www.mcgm.gov.in/irj/portal/anonymous/qlCLCComp', meta: t('about.gov.bmcComplaint.meta') },
+          { label: t('about.gov.aaple.label'), href: 'https://aaplesarkar.mahaonline.gov.in/en', meta: t('about.gov.aaple.meta') },
+          { label: t('about.gov.policeOnline.label'), href: 'https://mumbaipolice.gov.in/OnlineComplaints?ps_id=0', meta: t('about.gov.policeOnline.meta') }
+        ]
+      },
+      {
+        title: t('about.safety.title'),
+        icon: <AlertTriangle size={26} />,
+        accent: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
+        items: [
+          { label: t('about.safety.flood.label'), href: 'https://dm.mcgm.gov.in/flood-preparedness-guidelines', meta: t('about.safety.flood.meta') },
+          { label: t('about.safety.protocol.label'), href: 'https://ndma.gov.in/', meta: t('about.safety.protocol.meta') },
+          { label: t('about.safety.awareness.label'), href: 'https://www.mcgm.gov.in/', meta: t('about.safety.awareness.meta') }
+        ]
+      }
+    ],
+    [t]
+  );
+
   return (
     <div style={{ minHeight: '100vh', paddingTop: '140px', background: 'linear-gradient(180deg, #cfe5ff 0%, #eef5ff 28%, #f8fbff 100%)' }}>
       <section style={{ maxWidth: '1220px', margin: '0 auto', padding: '56px 40px 72px' }}>
         <div style={{ textAlign: 'center', marginBottom: '34px' }}>
           <h1 style={{ fontSize: '52px', marginBottom: '10px', textShadow: '0 10px 30px rgba(37, 99, 235, 0.25)' }}>
-            Resources
+            {t('about.title')}
           </h1>
           <p style={{ fontSize: '22px', fontWeight: 700, textShadow: '0 8px 20px rgba(37, 99, 235, 0.22)' }}>
-            Stay Informed & Prepared
+            {t('about.subtitle')}
           </p>
           <p style={{ maxWidth: '860px', margin: '16px auto 0', color: '#36506f', fontSize: '16px', lineHeight: 1.7 }}>
-            These contact numbers and links are set up so demo entries can later be replaced by Firebase-managed records. For now, this page uses official government and civic service endpoints for Mumbai and Maharashtra.
+            {t('about.intro')}
           </p>
         </div>
 
@@ -114,7 +75,7 @@ const About = () => {
                       rel={item.href.startsWith('http') ? 'noreferrer' : undefined}
                       style={{
                         ...resourceLinkButtonStyle,
-                        borderColor: group.accent.split(',')[1].trim().replace(')', '') + '33', // 20% opacity border
+                        borderColor: group.accent.split(',')[1].trim().replace(')', '') + '33',
                         color: group.accent.split(',')[1].trim().replace(')', '')
                       }}
                     >
@@ -177,20 +138,6 @@ const resourceLinkButtonStyle = {
   textDecoration: 'none',
   textAlign: 'center',
   transition: 'all 0.2s ease'
-};
-
-const flatActionLinkStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '10px',
-  justifyContent: 'center',
-  color: 'white',
-  borderRadius: '12px',
-  padding: '12px 14px',
-  fontSize: '14px',
-  fontWeight: 700,
-  boxShadow: '0 10px 20px rgba(22, 163, 74, 0.16)',
-  textDecoration: 'none'
 };
 
 export default About;

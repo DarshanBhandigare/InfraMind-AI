@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { Mail, MapPin, Phone, Clock, ChevronDown, ChevronUp, Send, Building2, Zap, Headphones, CheckCircle2 } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Mail, MapPin, Phone, Clock, ChevronDown, ChevronUp, Send, Zap, Headphones, CheckCircle2 } from 'lucide-react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../services/firebase';
+import { useTranslation } from 'react-i18next';
 
 const Contact = () => {
+  const { t } = useTranslation();
   const [activeFaq, setActiveFaq] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -14,24 +16,15 @@ const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const faqs = [
-    {
-      question: "How quickly are reported issues reviewed?",
-      answer: "Issues are triaged by our AI system instantly. Critical hazards are usually reviewed by a human operator within 15-30 minutes."
-    },
-    {
-      question: "Can I track the status of my report?",
-      answer: "Yes, you can track your reports in the Citizen Dashboard. You will also receive email notifications at each stage of the process."
-    },
-    {
-      question: "Who should I contact for commercial development inquiries?",
-      answer: "Please contact the City Administration department using the form or the direct channel listed below for all commercial inquiries."
-    },
-    {
-      question: "What data does InfraMind AI collect from reports?",
-      answer: "We collect geolocation, issue type, images, and descriptions. Personal data is encrypted and used only for essential communication."
-    }
-  ];
+  const faqs = useMemo(
+    () => [
+      { question: t('contact.faq.q1'), answer: t('contact.faq.a1') },
+      { question: t('contact.faq.q2'), answer: t('contact.faq.a2') },
+      { question: t('contact.faq.q3'), answer: t('contact.faq.a3') },
+      { question: t('contact.faq.q4'), answer: t('contact.faq.a4') }
+    ],
+    [t]
+  );
 
   const toggleFaq = (index) => {
     setActiveFaq(activeFaq === index ? null : index);
@@ -52,7 +45,7 @@ const Contact = () => {
       setFormData({ name: '', email: '', department: '', message: '' });
     } catch (error) {
       console.error("Error submitting inquiry:", error);
-      alert("Something went wrong. Please try again later.");
+      alert(t('contact.error'));
     } finally {
       setIsSubmitting(false);
     }
@@ -60,85 +53,81 @@ const Contact = () => {
 
   return (
     <div style={{ background: 'transparent', minHeight: '100vh', paddingTop: '100px' }}>
-      {/* Hero Section */}
       <section className="container" style={{ padding: '80px 0 40px' }}>
         <h1 style={{ fontSize: '64px', fontWeight: 800, letterSpacing: '-2px', marginBottom: '16px' }}>
-          Contact
+          {t('contact.title')}
         </h1>
         <p style={{ fontSize: '20px', color: 'var(--text-muted)', maxWidth: '600px', lineHeight: 1.6 }}>
-          Connect with our team. Whether you're reporting an urgent maintenance need or inquiring about municipal data, we're here to bridge the gap between intelligence and action.
+          {t('contact.lead')}
         </p>
       </section>
 
-      {/* Main Content Grid */}
       <section className="container" style={{ paddingBottom: '80px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '40px' }}>
 
-          {/* Inquiry Portal Form */}
           <div className="card" style={{ padding: '48px', position: 'relative', overflow: 'hidden' }}>
             {submitted ? (
               <div style={{ padding: '40px 0', textAlign: 'center' }}>
                 <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
                   <CheckCircle2 size={40} color="#10b981" />
                 </div>
-                <h2 style={{ fontSize: '32px', marginBottom: '12px' }}>Inquiry Received</h2>
+                <h2 style={{ fontSize: '32px', marginBottom: '12px' }}>{t('contact.successTitle')}</h2>
                 <p style={{ color: 'var(--text-muted)', fontSize: '18px', marginBottom: '32px' }}>
-                  Your message has been logged in our administrative command center. 
-                  A department representative will respond shortly.
+                  {t('contact.successBody')}
                 </p>
                 <button 
                   onClick={() => setSubmitted(false)}
                   className="btn-primary" 
                   style={{ width: 'fit-content', padding: '12px 32px' }}
                 >
-                  Send another message
+                  {t('contact.sendAnother')}
                 </button>
               </div>
             ) : (
               <>
-                <h2 style={{ fontSize: '24px', color: 'var(--primary)', marginBottom: '32px' }}>Inquiry Portal</h2>
+                <h2 style={{ fontSize: '24px', color: 'var(--primary)', marginBottom: '32px' }}>{t('contact.portalTitle')}</h2>
                 <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '24px' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                     <div>
-                      <label style={labelStyle}>Name</label>
+                      <label style={labelStyle}>{t('contact.labels.name')}</label>
                       <input 
                         type="text" 
                         required
                         className="input-field" 
-                        placeholder="Jane Cooper"
+                        placeholder={t('contact.placeholders.name')}
                         value={formData.name}
                         onChange={(e) => setFormData({...formData, name: e.target.value})}
                       />
                     </div>
                     <div>
-                      <label style={labelStyle}>Email</label>
+                      <label style={labelStyle}>{t('contact.labels.email')}</label>
                       <input 
                         type="email" 
                         required
                         className="input-field" 
-                        placeholder="jane@citygov.org"
+                        placeholder={t('contact.placeholders.email')}
                         value={formData.email}
                         onChange={(e) => setFormData({...formData, email: e.target.value})}
                       />
                     </div>
                   </div>
                   <div>
-                    <label style={labelStyle}>Department/Organization</label>
+                    <label style={labelStyle}>{t('contact.labels.department')}</label>
                     <input 
                       type="text" 
                       className="input-field" 
-                      placeholder="Public Works / Planning Dept"
+                      placeholder={t('contact.placeholders.department')}
                       value={formData.department}
                       onChange={(e) => setFormData({...formData, department: e.target.value})}
                     />
                   </div>
                   <div>
-                    <label style={labelStyle}>Message</label>
+                    <label style={labelStyle}>{t('contact.labels.message')}</label>
                     <textarea 
                       className="input-field" 
                       rows="5" 
                       required
-                      placeholder="Detail your inquiry or infrastructure concern..." 
+                      placeholder={t('contact.placeholders.message')} 
                       style={{ resize: 'none' }}
                       value={formData.message}
                       onChange={(e) => setFormData({...formData, message: e.target.value})}
@@ -149,29 +138,28 @@ const Contact = () => {
                     className="btn-primary" 
                     style={{ width: 'fit-content', padding: '12px 32px', display: 'flex', alignItems: 'center', gap: '8px', opacity: isSubmitting ? 0.7 : 1 }}
                   >
-                    {isSubmitting ? 'Sending...' : 'Submit Inquiry'} <Send size={18} />
+                    {isSubmitting ? t('contact.sending') : <>{t('contact.submit')} <Send size={18} /></>}
                   </button>
                 </form>
               </>
             )}
           </div>
 
-          {/* Info Cards Side */}
           <div style={{ display: 'grid', gap: '24px' }}>
-            {/* Card 1: Admin */}
             <div className="card" style={{ padding: '32px', display: 'flex', gap: '20px' }}>
               <div style={iconBoxStyle}><MapPin size={24} color="var(--primary)" /></div>
               <div>
-                <h3 style={cardTitleStyle}>City Administration</h3>
-                <p style={cardTextStyle}>Metropolis Civic Center<br />777 Innovation Way, Suite 400<br />Metropolis, MC 80210</p>
+                <h3 style={cardTitleStyle}>{t('contact.cards.adminTitle')}</h3>
+                <p style={cardTextStyle}>
+                  {t('contact.cards.adminLine1')}<br />{t('contact.cards.adminLine2')}<br />{t('contact.cards.adminLine3')}
+                </p>
               </div>
             </div>
 
-            {/* Card 2: Channels */}
             <div className="card" style={{ padding: '32px', display: 'flex', gap: '20px' }}>
               <div style={{ ...iconBoxStyle, background: '#e3fcef' }}><Zap size={24} color="#36B37E" /></div>
               <div>
-                <h3 style={cardTitleStyle}>Direct Channels</h3>
+                <h3 style={cardTitleStyle}>{t('contact.cards.channelsTitle')}</h3>
                 <p style={cardTextStyle}>
                   <Phone size={14} style={{ marginRight: '8px' }} /> (555) 012-3456<br />
                   <Mail size={14} style={{ marginRight: '8px' }} /> support@inframind.gov
@@ -179,14 +167,15 @@ const Contact = () => {
               </div>
             </div>
 
-            {/* Card 3: Support */}
             <div className="card" style={{ padding: '32px', display: 'flex', gap: '20px' }}>
               <div style={{ ...iconBoxStyle, background: '#fff0b3' }}><Clock size={24} color="#FFAB00" /></div>
               <div>
-                <h3 style={cardTitleStyle}>Citizen Support</h3>
-                <p style={cardTextStyle}>Monday – Friday<br /><strong>08:00 AM – 06:00 PM EST</strong></p>
+                <h3 style={cardTitleStyle}>{t('contact.cards.supportTitle')}</h3>
+                <p style={cardTextStyle}>
+                  {t('contact.cards.supportWeekdays')}<br /><strong>{t('contact.cards.supportHoursBold')}</strong>
+                </p>
                 <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px', fontStyle: 'italic' }}>
-                  Automated reporting portal is available 24/7 for emergency alerts.
+                  {t('contact.cards.supportNote')}
                 </p>
               </div>
             </div>
@@ -194,10 +183,9 @@ const Contact = () => {
         </div>
       </section>
 
-      {/* FAQ Section */}
       <section style={{ padding: '80px 0', borderTop: '1px solid var(--border)' }}>
         <div className="container" style={{ maxWidth: '800px' }}>
-          <h2 style={{ fontSize: '32px', marginBottom: '48px' }}>Infrastructure Reporting FAQ</h2>
+          <h2 style={{ fontSize: '32px', marginBottom: '48px' }}>{t('contact.faqTitle')}</h2>
           <div style={{ display: 'grid', gap: '16px' }}>
             {faqs.map((faq, index) => (
               <div key={index} style={{ borderBottom: '1px solid var(--border)' }}>
@@ -227,17 +215,16 @@ const Contact = () => {
         </div>
       </section>
 
-      {/* Simple Footer */}
       <footer className="container" style={{ padding: '60px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border)', marginTop: '80px' }}>
         <div>
-          <h4 style={{ fontSize: '18px', color: 'var(--primary)', marginBottom: '4px' }}>InfraMind AI</h4>
-          <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>© 2024 InfraMind AI. Civic Infrastructure Excellence.</p>
+          <h4 style={{ fontSize: '18px', color: 'var(--primary)', marginBottom: '4px' }}>{t('contact.footerBrand')}</h4>
+          <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{t('contact.footerCopy')}</p>
         </div>
         <div style={{ display: 'flex', gap: '32px', fontSize: '13px', fontWeight: 500, color: 'var(--text-muted)' }}>
-          <span>Privacy Policy</span>
-          <span>Terms of Service</span>
-          <span>Accessibility</span>
-          <span>Status</span>
+          <span>{t('contact.footerLinks.privacy')}</span>
+          <span>{t('contact.footerLinks.terms')}</span>
+          <span>{t('contact.footerLinks.accessibility')}</span>
+          <span>{t('contact.footerLinks.status')}</span>
         </div>
       </footer>
     </div>
