@@ -64,7 +64,7 @@ const AdminLogin = () => {
       <div style={ambientGlowStyle} />
       <div style={ambientGlowSecondaryStyle} />
 
-      <div style={contentShellStyle}>
+      <div className="admin-login-grid" style={contentShellStyle}>
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
@@ -223,10 +223,6 @@ const ambientGlowSecondaryStyle = {
 const contentShellStyle = {
   width: '100%',
   maxWidth: '1120px',
-  display: 'grid',
-  gridTemplateColumns: '1fr 460px',
-  gap: '28px',
-  alignItems: 'stretch',
   position: 'relative',
   zIndex: 1
 };

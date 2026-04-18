@@ -19,7 +19,7 @@ const LanguageSwitcher = () => {
   };
 
   return (
-    <div style={{ position: 'fixed', bottom: '32px', right: '32px', zIndex: 9999 }}>
+    <div className="language-switcher-wrap" style={{ position: 'fixed', bottom: '32px', right: '32px', zIndex: 9999 }}>
       <AnimatePresence>
         {isOpen && (
           <motion.div

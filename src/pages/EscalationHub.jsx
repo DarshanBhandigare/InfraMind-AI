@@ -146,16 +146,16 @@ const EscalationHub = () => {
           </div>
         </motion.div>
 
-        <div style={statsContainerStyle}>
+        <div className="hub-stats-row">
           <StatCard label={t('hub.statDelayed')} value={filteredEscalations.length} color="#ef4444" />
           <StatCard label={t('hub.statAccepted')} value={escalations.filter(e => e.acceptedBy).length} color="#10b981" />
           <StatCard label={t('hub.statCost')} value={`₹${(totalEscalationCost / 100000).toFixed(1)}L`} color="#3b82f6" />
         </div>
       </section>
 
-      <div style={contentGridStyle}>
+      <div className="hub-content-grid">
         <div style={{ ...feedContainerStyle, gridColumn: 'span 2' }}>
-          <div style={filterRowStyle}>
+          <div className="hub-filter-row">
             <h2 style={sectionTitleStyle}>{t('hub.feedTitle')}</h2>
             <div style={{ display: 'flex', gap: '8px' }}>
               {['All', 'Critical', 'Pothole', 'Drainage'].map(cat => (

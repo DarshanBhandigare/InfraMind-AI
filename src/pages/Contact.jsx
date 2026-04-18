@@ -63,7 +63,7 @@ const Contact = () => {
       </section>
 
       <section className="container" style={{ paddingBottom: '80px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '40px' }}>
+        <div className="contact-grid">
 
           <div className="card" style={{ padding: '48px', position: 'relative', overflow: 'hidden' }}>
             {submitted ? (
@@ -87,7 +87,7 @@ const Contact = () => {
               <>
                 <h2 style={{ fontSize: '24px', color: 'var(--primary)', marginBottom: '32px' }}>{t('contact.portalTitle')}</h2>
                 <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '24px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                  <div className="contact-form-row">
                     <div>
                       <label style={labelStyle}>{t('contact.labels.name')}</label>
                       <input 
@@ -215,7 +215,7 @@ const Contact = () => {
         </div>
       </section>
 
-      <footer className="container" style={{ padding: '60px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border)', marginTop: '80px' }}>
+      <footer className="container contact-footer">
         <div>
           <h4 style={{ fontSize: '18px', color: 'var(--primary)', marginBottom: '4px' }}>{t('contact.footerBrand')}</h4>
           <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{t('contact.footerCopy')}</p>

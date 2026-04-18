@@ -284,12 +284,12 @@ const CitizenReport = () => {
           {t('report.publicLead')}
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '64px', alignItems: 'start' }}>
+        <div className="report-public-grid">
           {/* Form Container with Overlay */}
           <div style={{ position: 'relative' }}>
             <div className="card" style={{ padding: '48px', opacity: user ? 1 : 0.4, pointerEvents: user ? 'all' : 'none' }}>
               <div style={{ display: 'grid', gap: '32px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                <div className="report-form-row">
                   <div>
                     <label style={labelStyle}>{t('report.category')}</label>
                     <select className="input-field" disabled>
@@ -356,7 +356,7 @@ const CitizenReport = () => {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '32px' }}>
+      <div className="report-member-grid">
         <div style={{ display: 'grid', gap: '32px' }}>
           <div className="card" style={{ padding: '32px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', color: 'var(--primary)' }}>
@@ -504,7 +504,7 @@ const CitizenReport = () => {
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F8F9FB' }}>
+      <div className="card report-footer-bar">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--text-muted)' }}>
           <div style={{ width: '24px', height: '24px', background: 'var(--safe)', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <CheckCircle size={14} />

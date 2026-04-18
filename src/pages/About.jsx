@@ -44,26 +44,25 @@ const About = () => {
   );
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: '140px', background: 'linear-gradient(180deg, #cfe5ff 0%, #eef5ff 28%, #f8fbff 100%)' }}>
-      <section style={{ maxWidth: '1220px', margin: '0 auto', padding: '56px 40px 72px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '34px' }}>
-          <h1 style={{ fontSize: '52px', marginBottom: '10px', textShadow: '0 10px 30px rgba(37, 99, 235, 0.25)' }}>
+    <div className="resources-page">
+      <section className="resources-section">
+        <div className="resources-header">
+          <h1 className="resources-title">
             {t('about.title')}
           </h1>
-          <p style={{ fontSize: '22px', fontWeight: 700, textShadow: '0 8px 20px rgba(37, 99, 235, 0.22)' }}>
+          <p className="resources-subtitle">
             {t('about.subtitle')}
           </p>
-
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '18px', marginBottom: '22px' }}>
+        <div className="resources-grid">
           {resourceGroups.map((group) => (
             <article key={group.title} style={resourceCardStyle}>
               <div style={resourceHeaderStyle}>
                 <div style={{ ...resourceIconWrapStyle, color: group.accent.split(',')[1].trim().replace(')', '') }}>{group.icon}</div>
                 <h3 style={{ color: '#1e293b', fontSize: '20px', fontWeight: 800, lineHeight: 1.1 }}>{group.title}</h3>
               </div>
-              <div style={{ padding: '0 18px 24px' }}>
+              <div className="resources-card-body">
                 <div style={{ display: 'grid', gap: '12px' }}>
                   {group.items.map((item) => (
                     <a
@@ -71,8 +70,8 @@ const About = () => {
                       href={item.href}
                       target={item.href.startsWith('http') ? '_blank' : undefined}
                       rel={item.href.startsWith('http') ? 'noreferrer' : undefined}
+                      className="resource-link-btn"
                       style={{
-                        ...resourceLinkButtonStyle,
                         borderColor: group.accent.split(',')[1].trim().replace(')', '') + '33',
                         color: group.accent.split(',')[1].trim().replace(')', '')
                       }}
@@ -122,20 +121,6 @@ const resourceIconWrapStyle = {
   flexShrink: 0
 };
 
-const resourceLinkButtonStyle = {
-  width: '100%',
-  display: 'grid',
-  gap: '2px',
-  alignItems: 'center',
-  justifyContent: 'center',
-  background: '#ffffff',
-  borderRadius: '16px',
-  padding: '14px',
-  border: '1px solid',
-  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
-  textDecoration: 'none',
-  textAlign: 'center',
-  transition: 'all 0.2s ease'
-};
+
 
 export default About;

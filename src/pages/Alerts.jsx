@@ -217,8 +217,8 @@ const Alerts = () => {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: '100px', background: 'transparent' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', minHeight: 'calc(100vh - 100px)' }}>
-        <aside style={currentView === 'overview' ? lightOverviewSidebarStyle : sidebarStyle}>
+      <div className="alerts-layout">
+        <aside className="alerts-sidebar" style={currentView === 'overview' ? lightOverviewSidebarStyle : sidebarStyle}>
           <div>
             <div
               style={{
@@ -364,7 +364,7 @@ const AlertsPanel = ({ filter, setFilter, filteredAlerts, overviewStats }) => {
           <div
             style={{
               ...searchWrapStyle,
-              width: '420px',
+              maxWidth: '420px', width: '100%',
               background: showSuggestions ? 'white' : '#e9eef6',
               border: showSuggestions ? '1px solid #dbe3ee' : '1px solid transparent',
               boxShadow: showSuggestions ? '0 8px 24px rgba(15, 23, 42, 0.08)' : 'none',
@@ -469,7 +469,7 @@ const AlertsPanel = ({ filter, setFilter, filteredAlerts, overviewStats }) => {
         </div>
       </section>
 
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '22px', alignItems: 'start' }}>
+      <section className="alerts-card-grid">
         <AnimatePresence mode="popLayout">
           {displayedAlerts.map((alert, index) => (
             <AlertCard key={alert.id} alert={alert} index={index} searchQuery={searchQuery} />
@@ -520,14 +520,14 @@ const OverviewPanel = ({ overviewStats, trendData, categoryChartData, tableRows 
       <div style={{ fontSize: '14px', color: '#7f8db4' }}>{t('alerts.liveData')}</div>
     </div>
 
-    <section style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '16px', marginBottom: '22px' }}>
+    <section className="alerts-metric-grid">
       <OverviewMetricCard icon="CR" value={overviewStats.critical} label={t('alerts.metricCritical')} />
       <OverviewMetricCard icon="TR" value={overviewStats.totalReports.toLocaleString()} label={t('alerts.metricTotal')} />
       <OverviewMetricCard icon="CL" value={overviewStats.closed.toLocaleString()} label={t('alerts.metricClosed')} />
       <OverviewMetricCard icon="AG" value={overviewStats.averageIssueAge} label={t('alerts.metricAge')} />
     </section>
 
-    <section style={{ display: 'grid', gridTemplateColumns: '1.45fr 0.95fr', gap: '18px', marginBottom: '20px' }}>
+    <section className="alerts-chart-grid">
       <div style={overviewCardStyle}>
         <div style={overviewCardTitleStyle}>{t('alerts.trendTitle')}</div>
         <div style={{ height: '250px', marginTop: '22px' }}>
