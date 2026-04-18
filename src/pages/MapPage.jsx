@@ -139,7 +139,7 @@ const MapPage = () => {
       const normalizedType = (report.type || '').toLowerCase();
       return activeKeys.some((key) => {
         const cleanKey = key.toLowerCase();
-        return normalizedType.includes(cleanKey) || (normalizedType.includes('light') && cleanKey.includes('light'));
+        return normalizedType.includes(cleanKey) || cleanKey.includes(normalizedType) || (normalizedType.includes('light') && cleanKey.includes('light'));
       });
     });
   }, [baseReports, issueFilters]);
