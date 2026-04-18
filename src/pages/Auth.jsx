@@ -89,7 +89,8 @@ const Auth = ({ mode = 'login' }) => {
                 required 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                style={inputStyle} 
+                className="input-field"
+                style={{ paddingLeft: '3rem', paddingRight: '1rem', paddingTop: '0.8rem', paddingBottom: '0.8rem', width: '100%' }}
                 placeholder={t('auth.emailPlaceholder')}
               />
             </div>
@@ -104,7 +105,8 @@ const Auth = ({ mode = 'login' }) => {
                 required 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                style={inputStyle} 
+                className="input-field"
+                style={{ paddingLeft: '3rem', paddingRight: '1rem', paddingTop: '0.8rem', paddingBottom: '0.8rem', width: '100%' }}
                 placeholder={t('auth.passwordPlaceholder')}
               />
             </div>
@@ -134,16 +136,6 @@ const Auth = ({ mode = 'login' }) => {
   );
 };
 
-const inputStyle = {
-  width: '100%',
-  padding: '0.8rem 1rem 0.8rem 3rem',
-  background: 'rgba(15, 23, 42, 0.5)',
-  border: '1px solid var(--glass-border)',
-  borderRadius: 'var(--radius-md)',
-  color: 'white',
-  outline: 'none',
-  fontSize: '1rem',
-  transition: 'border-color 0.3s ease'
-};
+
 
 export default Auth;
