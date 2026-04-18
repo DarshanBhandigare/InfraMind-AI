@@ -85,7 +85,6 @@
   "about": {
     "title": "Resources",
     "subtitle": "Stay Informed & Prepared",
-    "intro": "These contact numbers and links are set up so demo entries can later be replaced by Firebase-managed records. For now, this page uses official government and civic service endpoints for Mumbai and Maharashtra.",
     "emergency": {
       "title": "Emergency Contacts",
       "bmc1916": { "label": "BMC Helpline - 1916", "meta": "24x7 municipal help line" },
