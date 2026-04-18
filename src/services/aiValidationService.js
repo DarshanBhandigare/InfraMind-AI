@@ -1,4 +1,4 @@
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyC-J4KhVshZ-BqxCuxgfJKTvAP3nWD0VZk";
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const MODEL_CANDIDATES = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-latest"];
 
 const normalizeVerificationResult = (payload, modelName) => ({
