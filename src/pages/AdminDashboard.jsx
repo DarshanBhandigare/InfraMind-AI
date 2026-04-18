@@ -19,7 +19,8 @@ import {
   Inbox,
   Clock3,
   CheckCircle2,
-  Building2
+  Building2,
+  Send
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
@@ -72,6 +73,7 @@ const AdminDashboard = () => {
   const [validatingId, setValidatingId] = useState(null);
   const [contacts, setContacts] = useState([]);
   const [activeTab, setActiveTab] = useState('incidents');
+  const [selectedForDispatch, setSelectedForDispatch] = useState([]);
   const validationQueueRef = useRef(new Set());
 
   // Animation variants for staggered list entry
@@ -163,7 +165,7 @@ const AdminDashboard = () => {
   );
 
   const runAutoValidation = async (report) => {
-    const hasFinalVerification = report?.aiVerification && report.aiVerification.status !== 'ERROR';
+    const hasFinalVerification = report?.aiVerification && report.aiVerification.status !== 'ERROR' && report.aiVerification.model !== 'gemini-fallback-simulator';
 
     if (!report?.id || !report.imageUrl || hasFinalVerification || validationQueueRef.current.has(report.id)) {
       return;
@@ -188,6 +190,13 @@ const AdminDashboard = () => {
       validationQueueRef.current.delete(report.id);
     }
   };
+
+  useEffect(() => {
+    if (selectedReport && selectedReport.imageUrl) {
+      runAutoValidation(selectedReport);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedReport?.id]);
 
   const handleResolve = async (id) => {
     try {
@@ -231,6 +240,29 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error(error);
       window.alert('Unable to delete this report right now.');
+    }
+  };
+
+  const toggleDispatchSelection = (id) => {
+    setSelectedForDispatch((current) =>
+      current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
+    );
+  };
+
+  const handleBatchDispatch = async () => {
+    const shouldDispatch = window.confirm(`Are you sure you want to dispatch ${selectedForDispatch.length} report(s) to government/NGO authorities?`);
+    if (!shouldDispatch) return;
+
+    try {
+      await Promise.all(
+        selectedForDispatch.map((id) =>
+          updateDoc(doc(db, 'reports', id), { status: 'dispatched' })
+        )
+      );
+      setSelectedForDispatch([]);
+    } catch (err) {
+      console.error('Dispatch error:', err);
+      window.alert('Failed to dispatch some reports.');
     }
   };
 
@@ -403,7 +435,36 @@ const AdminDashboard = () => {
 
                     <div style={reportFooterStyle}>
                       <span style={scorePill(report.score)}>{report.score} risk</span>
-                      <span style={statusPill(report.status)}>{report.status}</span>
+                      {report.status?.toLowerCase() === 'approved' ? (
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleDispatchSelection(report.id);
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '4px 8px',
+                            borderRadius: '8px',
+                            border: selectedForDispatch.includes(report.id) ? '1px solid #2563eb' : '1px solid #cbd5e1',
+                            background: selectedForDispatch.includes(report.id) ? '#eff6ff' : 'white',
+                            color: selectedForDispatch.includes(report.id) ? '#2563eb' : '#64748b',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <div style={{
+                            width: '14px', height: '14px', borderRadius: '4px', border: selectedForDispatch.includes(report.id) ? 'none' : '1px solid #cbd5e1', background: selectedForDispatch.includes(report.id) ? '#2563eb' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white'
+                          }}>
+                            {selectedForDispatch.includes(report.id) && <Check size={10} strokeWidth={3} />}
+                          </div>
+                          Select
+                        </div>
+                      ) : (
+                        <span style={statusPill(report.status)}>{report.status}</span>
+                      )}
                     </div>
                   </motion.button>
                 ))}
@@ -441,6 +502,66 @@ const AdminDashboard = () => {
             </div>
           )}
         </div>
+
+        {/* Dispatch Action Panel */}
+        <AnimatePresence>
+          {selectedForDispatch.length > 0 && activeTab === 'incidents' && (
+            <motion.div
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 100, opacity: 0 }}
+              style={{
+                position: 'absolute',
+                bottom: '24px',
+                left: '24px',
+                width: 'calc(100% - 48px)',
+                background: 'rgba(255, 255, 255, 0.95)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(37, 99, 235, 0.3)',
+                borderRadius: '16px',
+                padding: '16px',
+                boxShadow: '0 20px 40px rgba(15, 23, 42, 0.15)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                zIndex: 50
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '13px', fontWeight: 800, color: '#1e293b' }}>
+                  {selectedForDispatch.length} report(s) selected
+                </span>
+                <button 
+                  onClick={() => setSelectedForDispatch([])}
+                  style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex', padding: '4px' }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <button
+                onClick={handleBatchDispatch}
+                style={{
+                  background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '10px',
+                  padding: '12px',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 16px rgba(37, 99, 235, 0.2)'
+                }}
+              >
+                <Send size={16} />
+                Dispatch to Govt / NGO
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </aside>
 
       <section style={detailPaneStyle}>
